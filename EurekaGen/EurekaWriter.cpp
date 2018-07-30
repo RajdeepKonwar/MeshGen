@@ -298,8 +298,12 @@ void Eureka::Writer::readElems() {
       l_words.push_back( l_next );
     }
 
-    //! We should have exactly 9 columns and only for tets
-    if( l_words.size() != 9 && l_words[1] != "4" )
+    //! We should have exactly 9 columns
+    if( l_words.size() != 9 )
+      continue;
+
+    //! Only check for tets
+    if( l_words[1].compare( "4" ) != 0 )
       continue;
 
     UID l_n1 = StrToUID( l_words[5] );
@@ -434,7 +438,8 @@ void Eureka::Writer::writeElems() {
   for( l_elemIt = m_elemMap.begin(); l_elemIt != m_elemMap.end(); ++l_elemIt )
     m_out << l_elemIt->first << " "
           << (*l_elemIt).second.m_node1 << " " << (*l_elemIt).second.m_node2 << " "
-          << (*l_elemIt).second.m_node3 << " " << (*l_elemIt).second.m_node4 << "\n";
+          << (*l_elemIt).second.m_node3 << " " << (*l_elemIt).second.m_node4
+          << std::endl;
 }
 
 //! ----------------------------------------------------------------------------
@@ -531,7 +536,7 @@ void Eureka::Writer::writeElementGroups() {
   //! Materials
   for( l_matIt = m_matList.begin(); l_matIt != m_matList.end(); ++l_matIt ) {
     Eureka::Material *l_mat = *l_matIt;
-    m_out << "8 " << l_mat->m_name << " " << l_mat->m_elemList.size() << std::endl;
+    m_out << "8 " << l_mat->m_name << " " << l_mat->m_elemList.size() << "\n";
 
     for( l_it = (l_mat->m_elemList).begin(); l_it != (l_mat->m_elemList).end();
                                                                         ++l_it )
