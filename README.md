@@ -15,14 +15,16 @@ This generates two programs: `GeoGen` and `EurekaGen`
 $ . gen_mesh.sh -c ./conf/BrakePad.conf -g ./mesh/BrakePad.geo -m ./mesh/BrakePad.msh -d ./mesh/BrakePad.dat
 ```
 The mesh generation script `gen_mesh.sh` takes in the following command-line arguments:
-| Argument | Description |
-| -------- | ----------- |
-| -h | Help message |
-| -x | Do not delete intermediate material file (optional) |
-| -c CONF | Input config file to both programs |
-| -g GEO | Output geometry script file from `GeoGen` |
-| -m MSH | Output mesh file from `Gmsh` |
-| -d DAT | Output Eureka format mesh file from `EurekaGen` |
+
+| Argument | Description                                         |
+| -------- | --------------------------------------------------- |
+| -h       | Help message                                        |
+| -x       | Do not delete intermediate material file (optional) |
+| -c CONF  | Input config file to both programs                  |
+| -g GEO   | Output geometry script file from `GeoGen`           |
+| -m MSH   | Output mesh file from `Gmsh`                        |
+| -d DAT   | Output Eureka format mesh file from `EurekaGen`     |
+
 The `GeoGen` program also generates an intermediate material (`GeoGen.mat`) file which is later used by the `EurekaGen` program to compute element groups for different materials. By default, the shell script removes this file after successful execution (i.e. after the .dat file is generated). One can choose to keep this material file for debugging purposes by including the command-line argument (-x) as shown below:
 ```sh
 $ . gen_mesh.sh -x -c ./conf/BrakePad.conf -g ./mesh/BrakePad.geo -m ./mesh/BrakePad.msh -d ./mesh/BrakePad.dat
@@ -30,12 +32,14 @@ $ . gen_mesh.sh -x -c ./conf/BrakePad.conf -g ./mesh/BrakePad.geo -m ./mesh/Brak
 
 ## Directory structure
 `MeshGen` comprises of a rigid directory structure which is as follows:
+
 | Directory | Description |
 | --------- | ----------- |
 | conf | Place all config files here |
 | EurekaGen | Contains the `EurekaGen` program executable and source files |
 | GeoGen | Contains the `GeoGen` program executable and source files |
 | mesh | Stores all the mesh-related output files (.dat, .geo, .msh) |
+
 Always try and use `mesh/` directory to store all output files, namely the (`-g`, `-m`, `-d`) options from the command-line arguments. The shell script will automatically create the `mesh/` directory if missing. If you wish to use your own directory, make sure to create it first and set the path correctly in order to avoid dire consequences!
 
 ## Input config file (.conf) format
@@ -90,6 +94,7 @@ rand_seed=1532972096
 If left blank, the randomizer will use the current system time as seed (default behavior).
 ##### Material block
 The following table describe all aspects of a material block and the possible options and combinations:
+
 | key-phrase | Description |
 | ---------- | ----------- |
 | material | Name of the material, used for element group names |
@@ -104,6 +109,7 @@ The following table describe all aspects of a material block and the possible op
 | len_mean | Mean-value of cylinder length. Only applicable for Gaussian distribution. `GeoGen` will output error if tried to use with Uniform distribution |
 | len_min len_max | Minimum and maximum value of cylinder length. Used only if `len_mean` isn't specified (i.e. `len_mean` has higher priority). Applicable for both types of distribution |
 | len_std_dev | Standard deviation for cylinder length. Must be specified when using `len_mean` (otherwise `GeoGen` will output error) whereas automatically computed from `len_min` & `len_max` |
+
 One can add as many materials according to their use-case by placing each material in its own block as described by the above table (for reference, see `./conf/BrakePad.conf`). For example:
 ```
 # Material 3
