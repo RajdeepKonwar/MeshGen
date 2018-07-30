@@ -1,5 +1,5 @@
 # MeshGen
-Generates Eureka format mesh file using [Gmsh](http://gmsh.info/) as meshing-tool. Gmsh is distributed under the terms of the GNU General Public License (GPL) which means that everyone is free to use Gmsh and to redistribute it on a free basis.
+Generates Eureka format mesh file using [Gmsh](http://gmsh.info/) as meshing-tool. Gmsh is distributed under the terms of the GNU General Public License (GPL) which means that everyone is free to use Gmsh and to redistribute it on a free basis. `MeshGen` bundles `Gmsh version 3.0.6` which is the latest version as of August 2018. It is recommended to have recent gnu modules loaded (at least gnu/4.8.5) along with OpenGL/Mesa libraries for Gmsh to run properly.
 
 ## Compilation instructions
 ```sh
@@ -11,36 +11,41 @@ This generates two programs: `GeoGen` and `EurekaGen`
 * `EurekaGen`: Takes in input Gmsh mesh (.msh) file and outputs Eureka format mesh (.dat) file
 
 ## Run instructions
+Change permission of the `gen_mesh.sh` script in order to make it an executable:
 ```sh
-$ . gen_mesh.sh -c ./conf/BrakePad.conf -g ./mesh/BrakePad.geo -m ./mesh/BrakePad.msh -d ./mesh/BrakePad.dat
+$ chmod 755 gen_mesh.sh
+```
+Run the shell script as shown:
+```sh
+$ ./gen_mesh.sh -c ./conf/BrakePad.conf -g ./mesh/BrakePad.geo -m ./mesh/BrakePad.msh -d ./mesh/BrakePad.dat
 ```
 The mesh generation script `gen_mesh.sh` takes in the following command-line arguments:
 
 | Argument | Description                                         |
 | -------- | --------------------------------------------------- |
 | -h       | Help message                                        |
-| -x       | Do not delete intermediate material file (optional) |
 | -c CONF  | Input config file to both programs                  |
 | -g GEO   | Output geometry script file from `GeoGen`           |
 | -m MSH   | Output mesh file from `Gmsh`                        |
 | -d DAT   | Output Eureka format mesh file from `EurekaGen`     |
+| -x       | Do not delete intermediate material file (optional) |
 
-The `GeoGen` program also generates an intermediate material (`GeoGen.mat`) file which is later used by the `EurekaGen` program to compute element groups for different materials. By default, the shell script removes this file after successful execution (i.e. after the .dat file is generated). One can choose to keep this material file for debugging purposes by including the command-line argument (-x) as shown below:
+The `GeoGen` program generates an intermediate material (`GeoGen.mat`) file which is used by the `EurekaGen` program to compute element groups for different materials. By default, the shell script removes this file after successful execution (i.e. after the .dat file is generated). One can choose to keep this material file for debugging purposes by including the command-line argument (-x) as shown below:
 ```sh
-$ . gen_mesh.sh -x -c ./conf/BrakePad.conf -g ./mesh/BrakePad.geo -m ./mesh/BrakePad.msh -d ./mesh/BrakePad.dat
+$ ./gen_mesh.sh -x -c ./conf/BrakePad.conf -g ./mesh/BrakePad.geo -m ./mesh/BrakePad.msh -d ./mesh/BrakePad.dat
 ```
 
 ## Directory structure
 `MeshGen` comprises of a rigid directory structure which is as follows:
 
-| Directory | Description |
-| --------- | ----------- |
-| conf | Place all config files here |
+| Directory | Description                                                  |
+| --------- | ------------------------------------------------------------ |
+| conf      | Place all config files (.conf) here                          |
 | EurekaGen | Contains the `EurekaGen` program executable and source files |
-| GeoGen | Contains the `GeoGen` program executable and source files |
-| mesh | Stores all the mesh-related output files (.dat, .geo, .msh) |
+| GeoGen    | Contains the `GeoGen` program executable and source files    |
+| mesh      | Store all mesh-related output files (.dat, .geo, .msh) here |
 
-Always try and use `mesh/` directory to store all output files, namely the (`-g`, `-m`, `-d`) options from the command-line arguments. The shell script will automatically create the `mesh/` directory if missing. If you wish to use your own directory, make sure to create it first and set the path correctly in order to avoid dire consequences!
+Use `mesh/` directory to store all output files, namely the (`-g`, `-m`, `-d`) options from the command-line arguments. The shell script will automatically create the `mesh/` directory if it is missing. If you wish to use your own directory, make sure to create it first and use correct path to avoid dire consequences!
 
 ## Input config file (.conf) format
 NOTE: All units are in microns (μm). Lines starting with `#` in .conf file are comments.
@@ -95,20 +100,20 @@ If left blank, the randomizer will use the current system time as seed (default 
 ##### Material block
 The following table describe all aspects of a material block and the possible options and combinations:
 
-| key-phrase | Description |
-| ---------- | ----------- |
-| material | Name of the material, used for element group names |
-| vol_frac | Volume fraction in percentage (wrt the total volume) of the material |
-| mesh_size | Individual mesh-size for the material. If left blank, will use the `global_mesh_size` value |
-| morph | Morphology of the material particles. Available options are `cylinder` and `sphere` |
-| rad_distrib | Probability distribution for radius (base-radius for cylinder whereas actual radius for sphere). Available options are `gaussian`/`gauss` and `uniform`/`flat` |
-| rad_mean | Mean-value of radius. Only applicable for Gaussian distribution. `GeoGen` will output error if tried to use with Uniform distribution |
-| rad_min rad_max | Minimum and maximum value of radius. Used only if `rad_mean` isn't specified (i.e. `rad_mean` has higher priority). Applicable for both types of distribution |
-| rad_std_dev | Standard deviation for radius. Must be specified when using `rad_mean` (otherwise `GeoGen` will output error) whereas automatically computed from `rad_min` & `rad_max` |
-| len_distrib | Probability distribution for length of cylinder. The following key-phrases are only applicable for `cylinder` morphology. Available options are `gaussian`/`gauss` and `uniform`/`flat` |
-| len_mean | Mean-value of cylinder length. Only applicable for Gaussian distribution. `GeoGen` will output error if tried to use with Uniform distribution |
-| len_min len_max | Minimum and maximum value of cylinder length. Used only if `len_mean` isn't specified (i.e. `len_mean` has higher priority). Applicable for both types of distribution |
-| len_std_dev | Standard deviation for cylinder length. Must be specified when using `len_mean` (otherwise `GeoGen` will output error) whereas automatically computed from `len_min` & `len_max` |
+| key-phrase      | Description                                                          |
+| --------------- | -------------------------------------------------------------------- |
+| material        | Name of the material, used for element group names                   |
+| vol_frac        | Volume fraction in percentage (wrt the total volume) of the material |
+| mesh_size       | Individual mesh-size for the material. If left blank, will use the `global_mesh_size` value |
+| morph           | Morphology of the material particles. Available options are `cylinder` and `sphere` |
+| rad_distrib     | Probability distribution for radius (base-radius for cylinder whereas actual radius for sphere). Available options are `gaussian`/`gauss` and `uniform`/`flat` |
+| rad_mean        | Mean-value of radius. Only applicable for Gaussian distribution. `GeoGen` will output error if tried to use with Uniform distribution |
+| rad_min rad_max | Minimum and maximum value of radius. Used only if `rad_mean` isn't specified (i.e. `rad_mean` has higher priority). Applicable for both types of distribution. For Gaussian distribution, the `rad_min` and `rad_max` correspond to `-3σ` and `3σ` respectively, where `σ` is the standard deviation (`rad_std_dev`) |
+| rad_std_dev     | Standard deviation for radius. Must be specified when using `rad_mean` (otherwise `GeoGen` will output error) whereas automatically computed from `rad_min` & `rad_max` |
+| len_distrib     | Probability distribution for length of cylinder. The following key-phrases are only applicable for `cylinder` morphology. Available options are `gaussian`/`gauss` and `uniform`/`flat` |
+| len_mean        | Mean-value of cylinder length. Only applicable for Gaussian distribution. `GeoGen` will output error if tried to use with Uniform distribution |
+| len_min len_max | Minimum and maximum value of cylinder length. Used only if `len_mean` isn't specified (i.e. `len_mean` has higher priority). Applicable for both types of distribution. For Gaussian distribution, the `len_min` and `len_max` correspond to `-3σ` and `3σ` respectively, where `σ` is the standard deviation (`len_std_dev`) |
+| len_std_dev     | Standard deviation for cylinder length. Must be specified when using `len_mean` (otherwise `GeoGen` will output error) whereas automatically computed from `len_min` & `len_max` |
 
 One can add as many materials according to their use-case by placing each material in its own block as described by the above table (for reference, see `./conf/BrakePad.conf`). For example:
 ```
@@ -143,7 +148,7 @@ radius center.x center.y center.z
 where `center` is the center of the sphere. x, y, z are the cartesian coordinate values of a point.
 
 ## Notes on constants used in code
-The code uses certain constants and typedefs which can be changed (although not recommended) according to the need of the user. The file `./GeoGen/GeoConstants.h` contains the iteration limit (by default 1000000) for the part where it tries to insert cylinder and sphere into the matrix while trying to avoid placing it out of the bounding box and avoid all types of collision detection. If the code fails to do so in the number of iterations specified above, it will quit the program by throwing an error message like:
+The code uses certain constants and typedefs which can be changed (although not recommended) according to the need of the user. The file `./GeoGen/GeoConstants.h` contains the iteration limit (by default 1 million) for the part where it tries to insert cylinder and sphere into the matrix while trying to avoid placing it out of the bounding box and avoid all types of collision detection. If the code fails to do so in the specified number of iterations, it will quit the program by throwing an error message like:
 ```
 Reached limit for iterative cylinder insertion! Exiting..
 ```
