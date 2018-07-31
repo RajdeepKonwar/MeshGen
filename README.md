@@ -17,7 +17,7 @@ $ chmod 755 gen_mesh.sh
 ```
 Run the mesh generation script as shown (the output is saved to a log file `MeshGen.log`):
 ```sh
-$ ./gen_mesh.sh -c ./conf/BrakePad.conf -g ./mesh/BrakePad.geo -m ./mesh/BrakePad.msh -d ./mesh/BrakePad.dat 2>&1 | tee MeshGen.log
+$ ./gen_mesh.sh -c conf/BrakePad.conf -g mesh/BrakePad.geo -m mesh/BrakePad.msh -d mesh/BrakePad.dat 2>&1 | tee MeshGen.log
 ```
 The script takes in the following command-line arguments:
 
@@ -32,7 +32,7 @@ The script takes in the following command-line arguments:
 
 The `GeoGen` program generates an intermediate material (`GeoGen.mat`) file which is used by the `EurekaGen` program to compute element groups for different materials. By default, the shell script removes this file after successful execution (i.e. after the .dat file is generated). One can choose to keep this material file for debugging purposes by including the command-line argument (-x) as shown below:
 ```sh
-$ ./gen_mesh.sh -x -c ./conf/BrakePad.conf -g ./mesh/BrakePad.geo -m ./mesh/BrakePad.msh -d ./mesh/BrakePad.dat 2>&1 | tee MeshGen.log
+$ ./gen_mesh.sh -x -c conf/BrakePad.conf -g mesh/BrakePad.geo -m mesh/BrakePad.msh -d mesh/BrakePad.dat 2>&1 | tee MeshGen.log
 ```
 
 ## Directory structure
