@@ -49,6 +49,7 @@ Use `mesh/` directory to store all output files, namely the (`-g`, `-m`, `-d`) o
 
 ## Input config file (.conf) format
 NOTE: All units are in microns (μm). Lines starting with `#` in .conf file are comments.
+
 The input config file (for example, `./conf/BrakePad.conf`) comprises of the following format:
 ##### Break-pad bounding box dimensions
 Internally, we follow a cartesian coordinate system, where z points upward. Length (by default 10000.0) is measured in x-direction, width (by default 5000.0) in y-direction and height (by default 5500.0) in z-direction.
@@ -108,11 +109,11 @@ The following table describe all aspects of a material block and the possible op
 | morph           | Morphology of the material particles. Available options are `cylinder` and `sphere` |
 | rad_distrib     | Probability distribution for radius (base-radius for cylinder whereas actual radius for sphere). Available options are `gaussian`/`gauss` and `uniform`/`flat` |
 | rad_mean        | Mean-value of radius. Only applicable for Gaussian distribution. `GeoGen` will output error if tried to use with Uniform distribution |
-| rad_min rad_max | Minimum and maximum value of radius. Used only if `rad_mean` isn't specified (i.e. `rad_mean` has higher priority). Applicable for both types of distribution. For Gaussian distribution, the `rad_min` and `rad_max` correspond to `-3σ` and `3σ` respectively, where `σ` is the standard deviation (`rad_std_dev`) |
+| rad_min rad_max | Minimum and maximum value of radius. Used only if `rad_mean` isn't specified (i.e. `rad_mean` has higher priority). Applicable for both types of distribution. For Gaussian distribution, the `rad_min` and `rad_max` correspond to `-3σ` and `3σ` respectively, where `σ` is the standard deviation (`rad_std_dev`), i.e. 99.7% of the data are within 3 standard deviations of the mean |
 | rad_std_dev     | Standard deviation for radius. Must be specified when using `rad_mean` (otherwise `GeoGen` will output error) whereas automatically computed from `rad_min` & `rad_max` |
 | len_distrib     | Probability distribution for length of cylinder. The following key-phrases are only applicable for `cylinder` morphology. Available options are `gaussian`/`gauss` and `uniform`/`flat` |
 | len_mean        | Mean-value of cylinder length. Only applicable for Gaussian distribution. `GeoGen` will output error if tried to use with Uniform distribution |
-| len_min len_max | Minimum and maximum value of cylinder length. Used only if `len_mean` isn't specified (i.e. `len_mean` has higher priority). Applicable for both types of distribution. For Gaussian distribution, the `len_min` and `len_max` correspond to `-3σ` and `3σ` respectively, where `σ` is the standard deviation (`len_std_dev`) |
+| len_min len_max | Minimum and maximum value of cylinder length. Used only if `len_mean` isn't specified (i.e. `len_mean` has higher priority). Applicable for both types of distribution. For Gaussian distribution, the `len_min` and `len_max` correspond to `-3σ` and `3σ` respectively, where `σ` is the standard deviation (`len_std_dev`), i.e. 99.7% of the data are within 3 standard deviations of the mean |
 | len_std_dev     | Standard deviation for cylinder length. Must be specified when using `len_mean` (otherwise `GeoGen` will output error) whereas automatically computed from `len_min` & `len_max` |
 
 One can add as many materials according to their use-case by placing each material in its own block as described by the above table (for reference, see `./conf/BrakePad.conf`). For example:
