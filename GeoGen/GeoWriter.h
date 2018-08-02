@@ -45,7 +45,7 @@ private:
   ID m_surfaceLoopID;
 
   //! Box dimensions
-  real m_boxLength, m_boxWidth, m_boxHeight;
+  real m_length, m_width, m_height;
 
   //! Global mesh size
   real m_meshSize;
@@ -82,6 +82,11 @@ private:
   //! Check if out of bounds
   bool outOfBounds( const std::initializer_list< geo::Vector > &i_list ) const;
 
+  //! Check for empty fields in config file
+  void chkEmpty( const std::string &i_name,
+                 const std::string &i_val,
+                 const std::string &i_mat = "" );
+
   //! Helper functions
   void writePoint( const geo::Vector   &i_point,
                    const real          &i_cl );
@@ -99,7 +104,7 @@ private:
 
   //! Writer functions
   void writeHeader();
-  void writeBox();
+  void writeBoxAndPiston();
   void writeCylinder( const geo::Material *i_mat );
   void writeSphere( const geo::Material *i_mat );
   void writeMaterials();

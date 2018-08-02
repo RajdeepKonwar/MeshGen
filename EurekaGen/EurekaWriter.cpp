@@ -38,7 +38,7 @@ Eureka::Writer::~Writer() {
 
   //! Display time taken
   m_time = clock() - m_time;
-  std::cout << "Done!\nTime taken = " << (float) m_time / CLOCKS_PER_SEC << "s\n";
+  std::cout << "Time taken = " << (float) m_time / CLOCKS_PER_SEC << "s\n";
 }
 
 //! ----------------------------------------------------------------------------
@@ -63,9 +63,9 @@ void Eureka::Writer::parseMaterials() {
 
     //! Get morphology
     std::getline( m_inMat, l_s );
-    if( l_s.compare( "cyl" ) == 0 )
+    if( l_s ==  "cyl" )
       l_mat->m_morph = geo::Morph::CYLINDER;
-    else if( l_s.compare( "sph" ) == 0 )
+    else if( l_s == "sph" )
       l_mat->m_morph = geo::Morph::SPHERE;
     else {
       std::cerr << "Unknown morphology (" << l_s << ")! Exiting..\n";
@@ -133,6 +133,9 @@ void Eureka::Writer::parseMaterials() {
 //! Read in nodes from msh file
 //! ----------------------------------------------------------------------------
 void Eureka::Writer::readNodes() {
+  //! Start time
+  clock_t l_time = clock();
+
   std::cout << "Reading in nodes.. " << std::flush;
   std::string l_s;
 
@@ -172,109 +175,141 @@ void Eureka::Writer::readNodes() {
     //! Populate node map
     m_nodeMap[l_id] = Eureka::Node( l_x, l_y, l_z );
 
-    bool l_flag = false;
-
     //! top_nodes
-    if( l_z == m_height ) {
+    if( l_z == m_height )
       m_topNodes.push_back( l_id );
-      l_flag = true;
-    }
 
     //! bottom_nodes
-    if( l_z == 0.0 ) {
+    if( l_z == 0.0 )
       m_bottomNodes.push_back( l_id );
-      l_flag = true;
-    }
 
     //! left_nodes
-    if( l_x == 0.0 ) {
+    if( l_x == 0.0 )
       m_leftNodes.push_back( l_id );
-      l_flag = true;
-    }
 
     //! right_nodes
-    if( l_x == m_length ) {
+    if( l_x == m_length )
       m_rightNodes.push_back( l_id );
-      l_flag = true;
-    }
 
     //! front_nodes
-    if( l_y == 0.0 ) {
+    if( l_y == 0.0 )
       m_frontNodes.push_back( l_id );
-      l_flag = true;
-    }
 
     //! back_nodes
-    if( l_y == m_width ) {
+    if( l_y == m_width )
       m_backNodes.push_back( l_id );
-      l_flag = true;
-    }
 
     //! corner_nodes
-    if( (l_x == 0.0 || l_x == m_length) && (l_y == 0.0 || l_y == m_width) &&
-        l_z == 0.0 ) {
+    if( (l_x == 0.0 || l_x == m_length) &&
+        (l_y == 0.0 || l_y == m_width)  && l_z == 0.0 )
       m_cornerNodes.push_back( l_id );
-      l_flag = true;
-    }
 
     //! top_corner_nodes
-    if( (l_x == 0.0 || l_x == m_length) && (l_y == 0.0 || l_y == m_width) &&
-        l_z == m_height ) {
+    if( (l_x == 0.0 || l_x == m_length) &&
+        (l_y == 0.0 || l_y == m_width)  && l_z == m_height )
       m_topCornerNodes.push_back( l_id );
-      l_flag = true;
-    }
 
     //! zleft_nodes
-    if( l_x == 0.0 && (l_y == 0.0 || l_y == m_width) ) {
+    if( l_x == 0.0 && (l_y == 0.0 || l_y == m_width) )
       m_zLeftNodes.push_back( l_id );
-      l_flag = true;
-    }
 
     //! zright_nodes
-    if( l_x == m_length && (l_y == 0.0 || l_y == m_width) ) {
+    if( l_x == m_length && (l_y == 0.0 || l_y == m_width) )
       m_zRightNodes.push_back( l_id );
-      l_flag = true;
-    }
 
     //! yleft_nodes
-    if( l_x == 0.0 && (l_z == 0.0 || l_z == m_height) ) {
+    if( l_x == 0.0 && (l_z == 0.0 || l_z == m_height) )
       m_yLeftNodes.push_back( l_id );
-      l_flag = true;
-    }
 
     //! yright_nodes
-    if( l_x == m_length && (l_z == 0.0 || l_z == m_height) ) {
+    if( l_x == m_length && (l_z == 0.0 || l_z == m_height) )
       m_yRightNodes.push_back( l_id );
-      l_flag = true;
-    }
 
     //! xfront_nodes
-    if( l_y == 0.0 && (l_z == 0.0 || l_z == m_height) ) {
+    if( l_y == 0.0 && (l_z == 0.0 || l_z == m_height) )
       m_xFrontNodes.push_back( l_id );
-      l_flag = true;
-    }
 
     //! xback_nodes
-    if( l_y == m_width && (l_z == 0.0 || l_z == m_height) ) {
+    if( l_y == m_width && (l_z == 0.0 || l_z == m_height) )
       m_xBackNodes.push_back( l_id );
-      l_flag = true;
+
+    //! If none of the above means node can lie inside piston
+    if( l_z >= (m_height - m_pistonThicc) )
+      m_pistonNodes.push_back( l_id );
+
+    geo::Vector l_P( l_x, l_y, l_z );
+    bool l_matPt = false;
+
+    //! Check if node lies on any of the particles surface
+    std::vector< Eureka::Material * >::const_iterator l_it;
+    for( l_it = m_matList.begin(); l_it != m_matList.end(); ++l_it ) {
+      //! Temporary material pointer
+      Eureka::Material *l_mat = *l_it;
+
+      l_matPt = false;
+      real l_c1 = 0.0, l_c2 = 0.0, l_d = 0.0;
+      geo::Vector l_A, l_B, l_AB, l_BA, l_AP, l_BP;
+
+      for( UID l_i = 0; l_i < l_mat->m_numParticles; l_i++ ) {
+        if( l_mat->m_morph == geo::Morph::CYLINDER ) {
+          //! A & B are end pts of cylinder axis
+          l_A  = l_mat->m_cylCP[l_i].first;
+          l_B  = l_mat->m_cylCP[l_i].second;
+
+          //! Define vectors
+          l_AB = geo::Vector( l_A, l_B );
+          l_BA = geo::Vector( l_B, l_A );
+          l_AP = geo::Vector( l_A, l_P );
+          l_BP = geo::Vector( l_B, l_P );
+
+          //! AB.AP
+          l_c1 = geo::dot( l_AB, l_AP );
+
+          //! BA.BP
+          l_c2 = geo::dot( l_BA, l_BP );
+
+          //! Distance of P from line joining A & B
+          l_d  = geo::norm( geo::cross( l_AP, l_BP ) ) / geo::norm( l_AB );
+
+          //! Point lying inside cylinder
+          if( l_c1 >= 0.0 && l_c2 >= 0.0 && l_d <= l_mat->m_radList[l_i] ) {
+            l_matPt = true;
+            break;
+          }
+        }
+
+        else if( l_mat->m_morph == geo::Morph::SPHERE ) {
+          //! Point lying inside sphere
+          if( geo::dist( l_P, l_mat->m_sphCP[l_i] ) <= l_mat->m_radList[l_i] ) {
+            l_matPt = true;
+            break;
+          }
+        }
+      }
+
+      //! Skip checking further materials as 1 node belongs in 1 material
+      if( l_matPt )
+        break;
     }
 
-    //! If none of the above means node lies in either piston or matrix
-    if( !l_flag ) {
-      if( l_z >= (m_height - m_pistonThicc) )
-        m_pistonNodes.push_back( l_id );
-      else
-        m_matrixNodes.push_back( l_id );
-    }
+    //! If we are at this point, it means node lies inside matrix
+    if( !l_matPt )
+      m_matrixNodes.push_back( l_id );
   }
+
+  //! End time
+  l_time = clock() - l_time;
+  std::cout << "Done! (" << (float) l_time / CLOCKS_PER_SEC << "s)\n";
 }
 
 //! ----------------------------------------------------------------------------
 //! Read in elements from msh file
 //! ----------------------------------------------------------------------------
 void Eureka::Writer::readElems() {
-  std::cout << "Done!\nReading in elems.. " << std::flush;
+  //! Start time
+  clock_t l_time = clock();
+
+  std::cout << "Reading in elems.. " << std::flush;
   std::string l_s;
 
   while( m_inMsh ) {
@@ -303,7 +338,7 @@ void Eureka::Writer::readElems() {
       continue;
 
     //! Only check for tets
-    if( l_words[1].compare( "4" ) != 0 )
+    if( l_words[1] != "4" )
       continue;
 
     UID l_n1 = StrToUID( l_words[5] );
@@ -327,7 +362,7 @@ void Eureka::Writer::readElems() {
     geo::Vector l_P( l_x, l_y, l_z );
 
     //! Check if tet lies inside piston
-    if( l_z >= (m_height - m_pistonThicc) ) {
+    if( l_z > (m_height - m_pistonThicc) ) {
       m_pistonList.push_back( m_elemID++ );
       continue;
     }
@@ -341,6 +376,7 @@ void Eureka::Writer::readElems() {
 
       l_found = false;
       real l_c1 = 0.0, l_c2 = 0.0, l_d = 0.0;
+      geo::Vector l_A, l_B, l_AB, l_BA, l_AP, l_BP;
 
       for( UID l_i = 0; l_i < l_mat->m_numParticles; l_i++ ) {
         if( l_mat->m_morph == geo::Morph::CYLINDER ) {
@@ -348,16 +384,20 @@ void Eureka::Writer::readElems() {
           geo::Vector l_A = l_mat->m_cylCP[l_i].first;
           geo::Vector l_B = l_mat->m_cylCP[l_i].second;
 
+          //! Define vectors
+          l_AB = geo::Vector( l_A, l_B );
+          l_BA = geo::Vector( l_B, l_A );
+          l_AP = geo::Vector( l_A, l_P );
+          l_BP = geo::Vector( l_B, l_P );
+
           //! AB.AP
-          l_c1 = geo::dot( geo::Vector( l_A, l_B ), geo::Vector( l_A, l_P ) );
+          l_c1 = geo::dot( l_AB, l_AP );
 
           //! BA.BP
-          l_c1 = geo::dot( geo::Vector( l_B, l_A ), geo::Vector( l_B, l_P ) );
+          l_c2 = geo::dot( l_BA, l_BP );
 
           //! Distance of P from line joining A & B
-          l_d  = geo::norm( geo::cross( geo::Vector( l_A, l_P ),
-                                        geo::Vector( l_B, l_P ) ) ) /
-                                        geo::norm( geo::Vector( l_A, l_B ) );
+          l_d  = geo::norm( geo::cross( l_AP, l_BP ) ) / geo::norm( l_AB );
 
           //! Condition that P lies inside cyl defined by control pts A & B
           if( l_c1 >= 0.0 && l_c2 >= 0.0 && l_d <= l_mat->m_radList[l_i] ) {
@@ -393,6 +433,10 @@ void Eureka::Writer::readElems() {
     //! Increment element ID
     m_elemID++;
   }
+
+  //! End time
+  l_time = clock() - l_time;
+  std::cout << "Done! (" << (float) l_time / CLOCKS_PER_SEC << "s)\n";
 }
 
 //! ----------------------------------------------------------------------------
@@ -418,20 +462,30 @@ void Eureka::Writer::writeDatFile() {
 //! Write nodes
 //! ----------------------------------------------------------------------------
 void Eureka::Writer::writeNodes() {
-  std::cout << "Done!\nWriting nodes.. " << std::flush;
+  //! Start time
+  clock_t l_time = clock();
+
+  std::cout << "Writing nodes.. " << std::flush;
   std::map< UID, Eureka::Node >::iterator l_nodeIt;
 
   //! Write nodes
   for( l_nodeIt = m_nodeMap.begin(); l_nodeIt != m_nodeMap.end(); ++l_nodeIt )
     m_out << l_nodeIt->first << " " << (l_nodeIt->second).m_x << " "
           << (l_nodeIt->second).m_y << " " << (l_nodeIt->second).m_z << std::endl;
+
+  //! End time
+  l_time = clock() - l_time;
+  std::cout << "Done! (" << (float) l_time / CLOCKS_PER_SEC << "s)\n";
 }
 
 //! ----------------------------------------------------------------------------
 //! Write elements
 //! ----------------------------------------------------------------------------
 void Eureka::Writer::writeElems() {
-  std::cout << "Done!\nWriting elems.. " << std::flush;
+  //! Start time
+  clock_t l_time = clock();
+
+  std::cout << "Writing elems.. " << std::flush;
   std::map< UID, Eureka::Elem >::iterator l_elemIt;
 
   //! Write elems
@@ -440,13 +494,20 @@ void Eureka::Writer::writeElems() {
           << (*l_elemIt).second.m_node1 << " " << (*l_elemIt).second.m_node2 << " "
           << (*l_elemIt).second.m_node3 << " " << (*l_elemIt).second.m_node4
           << std::endl;
+
+  //! End time
+  l_time = clock() - l_time;
+  std::cout << "Done! (" << (float) l_time / CLOCKS_PER_SEC << "s)\n";
 }
 
 //! ----------------------------------------------------------------------------
 //! Write nodal groups
 //! ----------------------------------------------------------------------------
 void Eureka::Writer::writeNodalGroups() {
-  std::cout << "Done!\nWriting nodal groups.. " << std::flush;
+  //! Start time
+  clock_t l_time = clock();
+
+  std::cout << "Writing nodal groups.. " << std::flush;
   std::vector< UID >::const_iterator l_it;
 
   m_out << "7 top_nodes " << m_topNodes.size() << std::endl;
@@ -512,13 +573,20 @@ void Eureka::Writer::writeNodalGroups() {
   m_out << "7 piston_nodes " << m_pistonNodes.size() << std::endl;
   for( l_it = m_pistonNodes.begin(); l_it != m_pistonNodes.end(); ++l_it )
     m_out << *l_it << std::endl;
+
+  //! End time
+  l_time = clock() - l_time;
+  std::cout << "Done! (" << (float) l_time / CLOCKS_PER_SEC << "s)\n";
 }
 
 //! ----------------------------------------------------------------------------
 //! Write element groups
 //! ----------------------------------------------------------------------------
 void Eureka::Writer::writeElementGroups() {
-  std::cout << "Done!\nWriting element groups.. " << std::flush;
+  //! Start time
+  clock_t l_time = clock();
+
+  std::cout << "Writing element groups.. " << std::flush;
 
   std::vector< UID >::const_iterator        l_it;
   std::vector< Material * >::const_iterator l_matIt;
@@ -542,6 +610,10 @@ void Eureka::Writer::writeElementGroups() {
                                                                         ++l_it )
       m_out << *l_it << std::endl;
   }
+
+  //! End time
+  l_time = clock() - l_time;
+  std::cout << "Done! (" << (float) l_time / CLOCKS_PER_SEC << "s)\n";
 }
 
 //! ----------------------------------------------------------------------------
@@ -581,13 +653,13 @@ void Eureka::Writer::parseConfigFile( const char *i_filename ) {
       continue;
 
     //! Box
-    if( l_varName.compare( "length" ) == 0 )
+    if( l_varName == "length" )
       m_length      = StrToReal( l_varValue );
-    else if( l_varName.compare( "width" ) == 0 )
+    else if( l_varName == "width" )
       m_width       = StrToReal( l_varValue );
-    else if( l_varName.compare( "height" ) == 0 )
+    else if( l_varName == "height" )
       m_height      = StrToReal( l_varValue );
-    else if( l_varName.compare( "piston_thicc" ) == 0 )
+    else if( l_varName == "piston_thicc" )
       m_pistonThicc = StrToReal( l_varValue );
   }
 

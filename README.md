@@ -106,7 +106,7 @@ The following table describe all aspects of a material block and the possible op
 | material        | Name of the material, used for element group names                   |
 | vol_frac        | Volume fraction in percentage (wrt the total volume) of the material |
 | mesh_size       | Individual mesh-size for the material. If left blank, will use the `global_mesh_size` value |
-| morph           | Morphology of the material particles. Available options are `cylinder` and `sphere` |
+| morph           | Morphology of the material particles. Available options are `cylinder`/`cyl` and `sphere`/`sph` |
 | rad_distrib     | Probability distribution for radius (base-radius for cylinder whereas actual radius for sphere). Available options are `gaussian`/`gauss` and `uniform`/`flat` |
 | rad_mean        | Mean-value of radius. Only applicable for Gaussian distribution. `GeoGen` will output error if tried to use with Uniform distribution |
 | rad_min rad_max | Minimum and maximum value of radius. Used only if `rad_mean` isn't specified (i.e. `rad_mean` has higher priority). Applicable for both types of distribution. For Gaussian distribution, the `rad_min` and `rad_max` correspond to `-3σ` and `3σ` respectively, where `σ` is the standard deviation (`rad_std_dev`), i.e. 99.7% of the data are within 3 standard deviations of the mean |

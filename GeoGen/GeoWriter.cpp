@@ -22,10 +22,10 @@ geo::Writer::Writer( const char* i_filename ) : m_time(clock()),
                                                 m_lineID(1),
                                                 m_lineLoopID(1),
                                                 m_surfaceID(1),
-                                                m_surfaceLoopID(2),
-                                                m_boxLength(10000.0),
-                                                m_boxWidth(5000.0),
-                                                m_boxHeight(5500.0),
+                                                m_surfaceLoopID(3),
+                                                m_length(10000.0),
+                                                m_width(5000.0),
+                                                m_height(5500.0),
                                                 m_meshSize(200.0),
                                                 m_tolParticles(50.0),
                                                 m_tolPartBound(50.0),
@@ -140,9 +140,10 @@ bool geo::Writer::outOfBounds( const std::initializer_list< geo::Vector >
   std::initializer_list< geo::Vector >::const_iterator l_it;
 
   for( l_it = i_list.begin(); l_it != i_list.end(); ++l_it )
-    if( l_it->m_x <= m_tolPartBound || l_it->m_x >= m_boxLength ||
-        l_it->m_y <= m_tolPartBound || l_it->m_y >= m_boxWidth  ||
-        l_it->m_z <= m_tolPartBound || l_it->m_z >= (m_boxHeight - m_pistonThicc) )
+    if( l_it->m_x <= m_tolPartBound || l_it->m_x >= (m_length - m_tolPartBound) ||
+        l_it->m_y <= m_tolPartBound || l_it->m_y >= (m_width  - m_tolPartBound) ||
+        l_it->m_z <= m_tolPartBound ||
+        l_it->m_z >= (m_height - m_pistonThicc - m_tolPartBound) )
       return true;
 
   return false;
@@ -222,9 +223,17 @@ void geo::Writer::writeSurfaceLoop( const ID                &i_loopID,
 void geo::Writer::writeSurfaceLoops() {
   //! 1st surface loop is for box
   m_out << "Surface Loop(1) = { ";
-  for( ID l_i = 1; l_i < m_surfaceID; l_i++ )
+  for( ID l_i = 1; l_i < m_surfaceID; l_i++ ) {
+    //! Skip piston surfaces
+    if( l_i == 2 || l_i == 4 || l_i == 6 || l_i == 8 || l_i == 10 )
+      continue;
+
     m_out << l_i << ((l_i + 1) == m_surfaceID ? "" : ",");
-  m_out << " };\n";
+  }
+
+  //! Second surface loop is for piston volume
+  m_out << " };\nSurface Loop(2) = { 2, 4, 6, 8, 10, 11 };\n";
+
 
   //! Write surface loops for each particle in map
   std::map< ID, std::vector< ID > >::const_iterator l_it;
@@ -278,44 +287,64 @@ void geo::Writer::writeHeader() {
 //! ----------------------------------------------------------------------------
 //! Write box dimensions to geo script
 //! ----------------------------------------------------------------------------
-void geo::Writer::writeBox() {
+void geo::Writer::writeBoxAndPiston() {
   m_out << "//! Box\n";
 
+  //! Height of piston matrix interface
+  real l_piston = m_height - m_pistonThicc;
+
   //! Points
-  writePoint( geo::Vector( 0.0,         0.0,        0.0         ), m_meshSize );
-  writePoint( geo::Vector( m_boxLength, 0.0,        0.0         ), m_meshSize );
-  writePoint( geo::Vector( m_boxLength, m_boxWidth, 0.0         ), m_meshSize );
-  writePoint( geo::Vector( 0.0,         m_boxWidth, 0.0         ), m_meshSize );
-  writePoint( geo::Vector( 0.0,         0.0,        m_boxHeight ), m_meshSize );
-  writePoint( geo::Vector( m_boxLength, 0.0,        m_boxHeight ), m_meshSize );
-  writePoint( geo::Vector( m_boxLength, m_boxWidth, m_boxHeight ), m_meshSize );
-  writePoint( geo::Vector( 0.0,         m_boxWidth, m_boxHeight ), m_meshSize );
+  writePoint( geo::Vector( 0.0,      0.0,     0.0      ), m_meshSize );   //! 1
+  writePoint( geo::Vector( m_length, 0.0,     0.0      ), m_meshSize );   //! 2
+  writePoint( geo::Vector( m_length, m_width, 0.0      ), m_meshSize );   //! 3
+  writePoint( geo::Vector( 0.0,      m_width, 0.0      ), m_meshSize );   //! 4
+  writePoint( geo::Vector( 0.0,      0.0,     l_piston ), m_meshSize );   //! 5
+  writePoint( geo::Vector( m_length, 0.0,     l_piston ), m_meshSize );   //! 6
+  writePoint( geo::Vector( m_length, m_width, l_piston ), m_meshSize );   //! 7
+  writePoint( geo::Vector( 0.0,      m_width, l_piston ), m_meshSize );   //! 8
+  writePoint( geo::Vector( 0.0,      0.0,     m_height ), m_meshSize );   //! 9
+  writePoint( geo::Vector( m_length, 0.0,     m_height ), m_meshSize );   //! 10
+  writePoint( geo::Vector( m_length, m_width, m_height ), m_meshSize );   //! 11
+  writePoint( geo::Vector( 0.0,      m_width, m_height ), m_meshSize );   //! 12
 
   m_out << std::endl;
 
   //! Lines
-  writeLine( std::make_pair( 1, 2 ) );
-  writeLine( std::make_pair( 2, 3 ) );
-  writeLine( std::make_pair( 3, 4 ) );
-  writeLine( std::make_pair( 4, 1 ) );
-  writeLine( std::make_pair( 1, 5 ) );
-  writeLine( std::make_pair( 2, 6 ) );
-  writeLine( std::make_pair( 3, 7 ) );
-  writeLine( std::make_pair( 4, 8 ) );
-  writeLine( std::make_pair( 5, 6 ) );
-  writeLine( std::make_pair( 6, 7 ) );
-  writeLine( std::make_pair( 7, 8 ) );
-  writeLine( std::make_pair( 8, 5 ) );
+  writeLine( std::make_pair( 1, 2 ) );      //! 1
+  writeLine( std::make_pair( 2, 3 ) );      //! 2
+  writeLine( std::make_pair( 3, 4 ) );      //! 3
+  writeLine( std::make_pair( 4, 1 ) );      //! 4
+  writeLine( std::make_pair( 1, 5 ) );      //! 5
+  writeLine( std::make_pair( 2, 6 ) );      //! 6
+  writeLine( std::make_pair( 3, 7 ) );      //! 7
+  writeLine( std::make_pair( 4, 8 ) );      //! 8
+  writeLine( std::make_pair( 5, 6 ) );      //! 9
+  writeLine( std::make_pair( 6, 7 ) );      //! 10
+  writeLine( std::make_pair( 7, 8 ) );      //! 11
+  writeLine( std::make_pair( 8, 5 ) );      //! 12
+  writeLine( std::make_pair( 9, 10 ) );     //! 13
+  writeLine( std::make_pair( 10, 11 ) );    //! 14
+  writeLine( std::make_pair( 11, 12 ) );    //! 15
+  writeLine( std::make_pair( 12, 9 ) );     //! 16
+  writeLine( std::make_pair( 5, 9 ) );      //! 17
+  writeLine( std::make_pair( 6, 10 ) );     //! 18
+  writeLine( std::make_pair( 7, 11 ) );     //! 19
+  writeLine( std::make_pair( 8, 12 ) );     //! 20
 
   m_out << std::endl;
 
   //! Line loops
-  writeLineLoop( {  8, -11, -7,   3  } );
-  writeLineLoop( {  12, 9,   10,  11 } );
-  writeLineLoop( {  7, -10, -6,   2  } );
-  writeLineLoop( { -2, -1,  -4,  -3  } );
-  writeLineLoop( {  4,  5,  -12, -8  } );
-  writeLineLoop( {  1,  6,  -9,  -5  } );
+  writeLineLoop( {  8, -11,  -7,   3 } );   //! 1
+  writeLineLoop( { 20, -15, -19,  11 } );   //! 2
+  writeLineLoop( {  4,   5, -12,  -8 } );   //! 3
+  writeLineLoop( { 17, -16, -20,  12 } );   //! 4
+  writeLineLoop( {  6,  -9,  -5,   1 } );   //! 5
+  writeLineLoop( {  9,  18, -13, -17 } );   //! 6
+  writeLineLoop( {  2,   7, -10,  -6 } );   //! 7
+  writeLineLoop( { 10,  19, -14, -18 } );   //! 8
+  writeLineLoop( { -1,  -4,  -3,  -2 } );   //! 9
+  writeLineLoop( { 13,  14,  15,  16 } );   //! 10
+  writeLineLoop( { -9, -12, -11, -10 } );   //! 11
 
   m_out << std::endl;
 
@@ -326,6 +355,11 @@ void geo::Writer::writeBox() {
   writePlaneSurface( 4 );
   writePlaneSurface( 5 );
   writePlaneSurface( 6 );
+  writePlaneSurface( 7 );
+  writePlaneSurface( 8 );
+  writePlaneSurface( 9 );
+  writePlaneSurface( 10 );
+  writePlaneSurface( 11 );
 
   m_out << std::endl;
 }
@@ -381,8 +415,8 @@ void geo::Writer::writeCylinder( const geo::Material *i_mat ) {
   geo::Vector l_cylAxis( 1.0, 0.0, 0.0 );
 
   //! Points on cylinder
-  geo::Vector l_rAxis, l_cP1, l_cP2, l_cP3, l_cP4,
-              l_cP5, l_cP6, l_cP7, l_cP8, l_cP9, l_cP10;
+  geo::Vector l_cP1, l_cP2, l_cP3, l_cP4, l_cP5,
+              l_cP6, l_cP7, l_cP8, l_cP9, l_cP10, l_rAxis;
 
   geo::Cylinder l_cyl;
   ID l_count = 0;
@@ -442,9 +476,9 @@ void geo::Writer::writeCylinder( const geo::Material *i_mat ) {
     geo::Matrix l_rmat = geo::getRMat( l_cylAxis, l_rAxis );
 
     //! Random translations
-    geo::Vector l_cB( randomizer< real >( 0.0, m_boxLength ),
-                      randomizer< real >( 0.0, m_boxWidth  ),
-                      randomizer< real >( 0.0, m_boxHeight ) );
+    geo::Vector l_cB( randomizer< real >( 0.0, m_length ),
+                      randomizer< real >( 0.0, m_width  ),
+                      randomizer< real >( 0.0, m_height ) );
 
     //! New points
     l_cP1   = geo::dot( l_rmat, l_cP1  ) + l_cB;
@@ -607,11 +641,11 @@ void geo::Writer::writeSphere( const geo::Material *i_mat ) {
 
     //! Randomize center
     l_cX = randomizer< real >( m_tolPartBound + l_rad,
-                               m_boxLength - l_rad - m_tolPartBound );
+                               m_length - l_rad - m_tolPartBound );
     l_cY = randomizer< real >( m_tolPartBound + l_rad,
-                               m_boxWidth  - l_rad - m_tolPartBound );
+                               m_width  - l_rad - m_tolPartBound );
     l_cZ = randomizer< real >( m_tolPartBound + l_rad,
-                               m_boxHeight - l_rad - m_tolPartBound - m_pistonThicc );
+                               m_height - l_rad - m_tolPartBound - m_pistonThicc );
 
     l_sph = geo::Sphere( geo::Vector( l_cX, l_cY, l_cZ ), l_rad );
 
@@ -686,7 +720,8 @@ void geo::Writer::writeSphere( const geo::Material *i_mat ) {
 //! Write materials
 //! ----------------------------------------------------------------------------
 void geo::Writer::writeMaterials() {
-  real l_totVol = m_boxLength * m_boxWidth * m_boxHeight;
+  //! Total matrix volume
+  real l_totVol = m_length * m_width * (m_height - m_pistonThicc);
 
   //! Write material info
   std::vector< geo::Material * >::const_iterator l_it;
@@ -734,11 +769,13 @@ void geo::Writer::writeMaterials() {
         if( !l_mat->m_lenStdDev && l_mat->m_lenMin && l_mat->m_lenMax )
           l_mat->m_lenStdDev = (l_mat->m_lenMax - l_mat->m_lenMin) / 6.0;
 
+        std::cout << l_mat->m_name << ": " << l_cylCount << " cyl" << std::endl;
         //! Write no. of cylinders to mat file
         m_mat << "cyl\n" << l_cylCount << std::endl;
 
         for( ID l_i = 0; l_i < l_cylCount; l_i++ )
           writeCylinder( l_mat );
+
         break;
       }
 
@@ -752,12 +789,13 @@ void geo::Writer::writeMaterials() {
         if( !l_mat->m_radStdDev && l_mat->m_radMin && l_mat->m_radMax )
           l_mat->m_radStdDev = (l_mat->m_radMax - l_mat->m_radMin) / 6.0;
 
+        std::cout << l_mat->m_name << ": " << l_sphCount << " sph" << std::endl;
         //! Write no. of spheres to mat file
         m_mat << "sph\n" << l_sphCount << std::endl;
-        
 
         for( ID l_i = 0; l_i < l_sphCount; l_i++ )
           writeSphere( l_mat );
+
         break;
       }
     }
@@ -777,6 +815,22 @@ void geo::Writer::writeFooter() {
 
   //! Write volumes info
   writeVolumes();
+}
+
+//! ----------------------------------------------------------------------------
+//! Checks if value in config entry is empty
+//! ----------------------------------------------------------------------------
+void geo::Writer::chkEmpty( const std::string &i_name,
+                            const std::string &i_val,
+                            const std::string &i_mat ) {
+  if( i_val.empty() ) {
+    std::cerr << "No value found for " << i_name
+              << (!i_mat.empty() ? " in " : "")
+              << (!i_mat.empty() ? i_mat : "" ) << "! Exiting..\n";
+    m_out.close();
+    m_mat.close();
+    exit( EXIT_FAILURE );
+  }
 }
 
 //! ----------------------------------------------------------------------------
@@ -813,47 +867,74 @@ void geo::Writer::parseConfigFile( const char *i_filename ) {
     std::string l_varValue = l_lineBuf.substr( l_l + 1 );
 
     //! Skip entries without values
-    if( l_varValue.empty() )
-      continue;
+    //if( l_varValue.empty() )
+      //continue;
 
     //! Box
-    if( l_varName.compare( "length" ) == 0 )
-      m_boxLength       = StrToReal( l_varValue );
-    else if( l_varName.compare( "width" ) == 0 )
-      m_boxWidth        = StrToReal( l_varValue );
-    else if( l_varName.compare( "height" ) == 0 )
-      m_boxHeight       = StrToReal( l_varValue );
-    else if( l_varName.compare( "global_mesh_size" ) == 0 )
-      m_meshSize  = StrToReal( l_varValue );
+    if( l_varName == "length" ) {
+      chkEmpty( l_varName, l_varValue );
+      m_length          = StrToReal( l_varValue );
+    }
+    else if( l_varName == "width" ) {
+      chkEmpty( l_varName, l_varValue );
+      m_width           = StrToReal( l_varValue );
+    }
+    else if( l_varName == "height" ) {
+      chkEmpty( l_varName, l_varValue );
+      m_height          = StrToReal( l_varValue );
+    }
+    else if( l_varName == "global_mesh_size" ) {
+      chkEmpty( l_varName, l_varValue );
+      m_meshSize        = StrToReal( l_varValue );
+    }
 
     //! Tolerance values
-    else if( l_varName.compare( "tol_particles" ) == 0 )
+    else if( l_varName == "tol_particles" ) {
+      if( l_varValue.empty() )
+        continue;
       m_tolParticles    = StrToReal( l_varValue );
-    else if( l_varName.compare( "tol_particles_boundaries" ) == 0 )
+    }
+    else if( l_varName == "tol_particles_boundaries" ) {
+      if( l_varValue.empty() )
+        continue;
       m_tolPartBound    = StrToReal( l_varValue );
+    }
 
     //! Random seed
-    else if( l_varName.compare( "rand_seed" ) == 0 )
+    else if( l_varName == "rand_seed" ) {
+      if( l_varValue.empty() )
+        continue;
       m_seed            = StrToID( l_varValue );
+    }
 
     //! Piston thickness
-    else if( l_varName.compare( "piston_thicc" ) == 0 )
+    else if( l_varName == "piston_thicc" ) {
+      if( l_varValue.empty() )
+        continue;
       m_pistonThicc     = StrToID( l_varValue );
+    }
 
     //! Material
-    else if( l_varName.compare( "material" ) == 0 ) {
+    else if( l_varName == "material" ) {
+      chkEmpty( l_varName, l_varValue );
       l_mat = new geo::Material();
       m_matList.push_back( l_mat );
       l_mat->m_name     = l_varValue;
     }
-    else if( l_varName.compare( "vol_frac" ) == 0 )
+    else if( l_varName == "vol_frac" ) {
+      chkEmpty( l_varName, l_varValue, l_mat->m_name );
       l_mat->m_volFrac  = StrToReal( l_varValue );
-    else if( l_varName.compare( "mesh_size" ) == 0 )
+    }
+    else if( l_varName == "mesh_size" ) {
+      if( l_varValue.empty() )
+        continue;
       l_mat->m_meshSize = StrToReal( l_varValue );
-    else if( l_varName.compare( "morph" ) == 0 ) {
-      if( !l_varValue.compare( "cylinder" ) || !l_varValue.compare( "cyl" ) )
+    }
+    else if( l_varName == "morph" ) {
+      chkEmpty( l_varName, l_varValue, l_mat->m_name );
+      if( (l_varValue == "cylinder") || (l_varValue == "cyl") )
         l_mat->m_morph  = geo::Morph::CYLINDER;
-      else if( !l_varValue.compare( "sphere" ) || !l_varValue.compare( "sph" ) )
+      else if( (l_varValue == "sphere") || (l_varValue == "sph") )
         l_mat->m_morph  = geo::Morph::SPHERE;
       else {
         std::cerr << "Unknown morphology (" << l_varValue << ")! Exiting..\n";
@@ -862,10 +943,12 @@ void geo::Writer::parseConfigFile( const char *i_filename ) {
         exit( EXIT_FAILURE);
       }
     }
-    else if( l_varName.compare( "rad_distrib" ) == 0 ) {
-      if( !l_varValue.compare( "gaussian" ) || !l_varValue.compare( "gauss" ) )
+
+    else if( l_varName == "rad_distrib" ) {
+      chkEmpty( l_varName, l_varValue, l_mat->m_name );
+      if( l_varValue == "gaussian" || l_varValue == "gauss" )
         l_mat->m_radDistrib = geo::Distrib::GAUSSIAN;
-      else if( !l_varValue.compare( "uniform" ) || !l_varValue.compare( "flat" ) )
+      else if( l_varValue == "uniform" || l_varValue == "flat" )
         l_mat->m_radDistrib = geo::Distrib::UNIFORM;
       else {
         std::cerr << "Unknown distribution (" << l_varValue << ")! Exiting..\n";
@@ -874,7 +957,8 @@ void geo::Writer::parseConfigFile( const char *i_filename ) {
         exit( EXIT_FAILURE);
       }
     }
-    else if( (l_varName.compare( "rad_mean" ) == 0) ) {
+    else if( l_varName == "rad_mean" ) {
+      chkEmpty( l_varName, l_varValue, l_mat->m_name );
       if( l_mat->m_radDistrib == geo::Distrib::GAUSSIAN )
         l_mat->m_radMean  = StrToReal( l_varValue );
       else {
@@ -885,15 +969,21 @@ void geo::Writer::parseConfigFile( const char *i_filename ) {
         exit( EXIT_FAILURE );
       }
     }
-    else if( l_varName.compare( "rad_min" ) == 0 )
+    else if( l_varName == "rad_min" ) {
+      chkEmpty( l_varName, l_varValue, l_mat->m_name );
       l_mat->m_radMin     = StrToReal( l_varValue );
-    else if( l_varName.compare( "rad_max" ) == 0 )
+    }
+    else if( l_varName == "rad_max" ) {
+      chkEmpty( l_varName, l_varValue, l_mat->m_name );
       l_mat->m_radMax     = StrToReal( l_varValue );
-    else if( l_varName.compare( "rad_std_dev" ) == 0 ) {
+    }
+    else if( l_varName == "rad_std_dev" ) {
+      chkEmpty( l_varName, l_varValue, l_mat->m_name );
       l_mat->m_radStdDev  = StrToReal( l_varValue );
     }
 
-    else if( l_varName.compare( "len_distrib" ) == 0 ) {
+    else if( l_varName == "len_distrib" ) {
+      chkEmpty( l_varName, l_varValue, l_mat->m_name );
       if( l_mat->m_morph == geo::Morph::SPHERE ) {
         std::cerr << "Cannot use len specs with sphere morphology! Exiting..\n";
         m_out.close();
@@ -901,9 +991,9 @@ void geo::Writer::parseConfigFile( const char *i_filename ) {
         exit( EXIT_FAILURE );
       }
 
-      if( !l_varValue.compare( "gaussian" ) || !l_varValue.compare( "gauss" ) )
+      if( l_varValue == "gaussian" || l_varValue == "gauss" )
         l_mat->m_lenDistrib  = geo::Distrib::GAUSSIAN;
-      else if( !l_varValue.compare( "uniform" ) || !l_varValue.compare( "flat" ) )
+      else if( l_varValue == "uniform" || l_varValue == "flat" )
         l_mat->m_lenDistrib  = geo::Distrib::UNIFORM;
       else {
         std::cerr << "Unknown distribution (" << l_varValue << ")! Exiting..\n";
@@ -912,7 +1002,8 @@ void geo::Writer::parseConfigFile( const char *i_filename ) {
         exit( EXIT_FAILURE);
       }
     }
-    else if( (l_varName.compare( "len_mean" ) == 0) ) {
+    else if( l_varName == "len_mean" ) {
+      chkEmpty( l_varName, l_varValue, l_mat->m_name );
       if( l_mat->m_morph == geo::Morph::SPHERE ) {
         std::cerr << "Cannot use len specs with sphere morphology! Exiting..\n";
         m_out.close();
@@ -930,12 +1021,18 @@ void geo::Writer::parseConfigFile( const char *i_filename ) {
         exit( EXIT_FAILURE );
       }
     }
-    else if( l_varName.compare( "len_min" ) == 0 )
-      l_mat->m_lenMin  = StrToReal( l_varValue );
-    else if( l_varName.compare( "len_max" ) == 0 )
-      l_mat->m_lenMax  = StrToReal( l_varValue );
-    else if( l_varName.compare( "len_std_dev" ) == 0 )
-      l_mat->m_lenStdDev = StrToReal( l_varValue );
+    else if( l_varName == "len_min" ) {
+      chkEmpty( l_varName, l_varValue, l_mat->m_name );
+      l_mat->m_lenMin     = StrToReal( l_varValue );
+    }
+    else if( l_varName == "len_max" ) {
+      chkEmpty( l_varName, l_varValue, l_mat->m_name );
+      l_mat->m_lenMax     = StrToReal( l_varValue );
+    }
+    else if( l_varName == "len_std_dev" ) {
+      chkEmpty( l_varName, l_varValue, l_mat->m_name );
+      l_mat->m_lenStdDev  = StrToReal( l_varValue );
+    }
 
     else
       std::cerr << "Unknown setting (" << l_varName << "). Ignored.\n";
@@ -951,8 +1048,8 @@ void geo::Writer::writeGeo() {
   //! Write header
   writeHeader();
 
-  //! Write brake pad bounding box info
-  writeBox();
+  //! Write brake pad bounding box info along with piston
+  writeBoxAndPiston();
 
   //! Write materials
   writeMaterials();

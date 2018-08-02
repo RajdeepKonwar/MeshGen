@@ -17,10 +17,6 @@ EOF
 # Parse command line arguments
 OPTIND=1
 MAT=1
-#CONF=""
-#GEO=""
-#MSH=""
-#DAT=""
 
 while getopts "hc:g:m:d:x" opt; do
   case "$opt" in
@@ -73,6 +69,10 @@ printf "\n-----------------------------"
 printf "\nGeoGen: Generating geo file.."
 printf "\n-----------------------------\n"
 ./GeoGen/GeoGen -f $CONF -o $GEO
+if [ $? -ne 0 ]
+then
+  exit 1
+fi
 
 SECONDS=0
 # Generate msh using Gmsh program
@@ -82,12 +82,20 @@ printf "\n---------------------------\n"
 ./gmsh $GEO -3 -o $MSH
 duration=$SECONDS
 printf "Time taken = $duration s\n"
+if [ $? -ne 0 ]
+then
+  exit 1
+fi
 
 # Generate dat using EurekaGen program
 printf "\n--------------------------------"
 printf "\nEurekaGen: Generating dat file.."
 printf "\n--------------------------------\n"
 ./EurekaGen/EurekaGen -f $CONF -i $MSH -o $DAT
+if [ $? -ne 0 ]
+then
+  exit 1
+fi
 
 # Remove intermediate material file
 if [ $MAT -eq 1 ]
