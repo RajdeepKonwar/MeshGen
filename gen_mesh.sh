@@ -79,7 +79,8 @@ SECONDS=0
 printf "\n---------------------------"
 printf "\nGmsh: Generating msh file.."
 printf "\n---------------------------\n"
-./gmsh $GEO -3 -o $MSH
+#./gmsh $GEO -3 -o $MSH
+./gmsh $GEO -3 -o $MSH -optimize_threshold 0.6
 duration=$SECONDS
 printf "Time taken = $duration s\n"
 if [ $? -ne 0 ]

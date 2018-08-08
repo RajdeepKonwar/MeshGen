@@ -18,28 +18,6 @@ namespace Eureka {
 }
 
 //! ----------------------------------------------------------------------------
-//! Node data-structure
-//! ----------------------------------------------------------------------------
-struct Eureka::Node {
-  real m_x, m_y, m_z;
-
-  Node() : m_x(0.0), m_y(0.0), m_z(0.0) {}
-
-  Node( const real &i_x,
-        const real &i_y,
-        const real &i_z ) : m_x(i_x), m_y(i_y), m_z(i_z) {}
-
-  //! Assignment operation
-  Node & operator = ( const Node &i_node ) {
-    this->m_x = i_node.m_x;
-    this->m_y = i_node.m_y;
-    this->m_z = i_node.m_z;
-
-    return (*this);
-  }
-};
-
-//! ----------------------------------------------------------------------------
 //! Tetrahedron element data-structure
 //! ----------------------------------------------------------------------------
 struct Eureka::Elem {
@@ -78,11 +56,11 @@ class Eureka::Writer {
 private:
   clock_t m_time;
 
-  UID m_elemID, m_numOfNodes;
+  UID m_elemID, m_badElems, m_numOfNodes;
   real m_length, m_width, m_height, m_pistonThicc;
 
   //! Node and element list
-  std::map< UID, Eureka::Node > m_nodeMap;
+  std::map< UID, geo::Vector >  m_nodeMap;
   std::map< UID, Eureka::Elem > m_elemMap;
 
   //! Material list
@@ -104,6 +82,10 @@ private:
   std::ifstream m_inMsh, m_inMat;
   std::ofstream m_out;
 
+  void checkElemQual( const geo::Vector &i_A,
+                      const geo::Vector &i_B,
+                      const geo::Vector &i_C,
+                      const geo::Vector &i_D );
   void parseMaterials();
   void readNodes();
   void readElems();

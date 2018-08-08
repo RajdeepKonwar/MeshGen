@@ -6,7 +6,9 @@
 //! Constructor
 //! ----------------------------------------------------------------------------
 Eureka::Writer::Writer( const char *i_inFile,
-                        const char *i_outFile ) : m_time(clock()), m_elemID(1) {
+                        const char *i_outFile ) : m_time(clock()),
+                                                  m_elemID(1),
+                                                  m_badElems(0) {
   //! Open .msh file
   m_inMsh.open( i_inFile, std::ifstream::in );
   if( !m_inMsh.is_open() ) {
@@ -39,6 +41,34 @@ Eureka::Writer::~Writer() {
   //! Display time taken
   m_time = clock() - m_time;
   std::cout << "Time taken = " << (float) m_time / CLOCKS_PER_SEC << "s\n";
+}
+
+//! ----------------------------------------------------------------------------
+//! Check element quality
+//! ----------------------------------------------------------------------------
+void Eureka::Writer::checkElemQual( const geo::Vector &i_A,
+                                    const geo::Vector &i_B,
+                                    const geo::Vector &i_C,
+                                    const geo::Vector &i_D ) {
+  //! Get inradius and circumradius for tet
+  real l_iRad = geo::getInRadius( i_A, i_B, i_C, i_D );
+  real l_cRad = geo::getCircumRadius( i_A, i_B, i_C, i_D );
+
+  real l_edge[6] = { geo::dist( i_A, i_B ), geo::dist( i_A, i_D ),
+                     geo::dist( i_A, i_C ), geo::dist( i_B, i_C ),
+                     geo::dist( i_B, i_D ), geo::dist( i_C, i_D ) };
+
+  //! Get shortest and longest edge
+  real l_min = std::min( std::min( l_edge[0], l_edge[1] ),
+                         std::min( std::min( l_edge[2], l_edge[3] ),
+                                   std::min( l_edge[4], l_edge[5] ) ) );
+  real l_max = std::max( std::max( l_edge[0], l_edge[1] ),
+                         std::max( std::max( l_edge[2], l_edge[3] ),
+                                   std::max( l_edge[4], l_edge[5] ) ) );
+
+  //! Quality criterion
+  if( l_cRad / l_iRad > 6.0 && l_max / l_min > 5.0 )
+    m_badElems++;
 }
 
 //! ----------------------------------------------------------------------------
@@ -117,10 +147,12 @@ void Eureka::Writer::parseMaterials() {
                                                    StrToReal( l_words[5] ),
                                                    StrToReal( l_words[6] ) ) ) );
           break;
+
         case geo::Morph::SPHERE:
           l_mat->m_sphCP.push_back( geo::Vector( StrToReal( l_words[1] ),
                                                  StrToReal( l_words[2] ),
                                                  StrToReal( l_words[3] ) ) );
+          break;
       }
     }
 
@@ -173,7 +205,7 @@ void Eureka::Writer::readNodes() {
     real l_z = StrToReal( l_words[3] );
 
     //! Populate node map
-    m_nodeMap[l_id] = Eureka::Node( l_x, l_y, l_z );
+    m_nodeMap[l_id] = geo::Vector( l_x, l_y, l_z );
 
     //! top_nodes
     if( l_z == m_height )
@@ -233,14 +265,14 @@ void Eureka::Writer::readNodes() {
     if( l_y == m_width && (l_z == 0.0 || l_z == m_height) )
       m_xBackNodes.push_back( l_id );
 
-    //! If none of the above means node can lie inside piston
+    //! Piston nodes
     if( l_z >= (m_height - m_pistonThicc) )
       m_pistonNodes.push_back( l_id );
 
     geo::Vector l_P( l_x, l_y, l_z );
     bool l_matPt = false;
 
-    //! Check if node lies on any of the particles surface
+    //! Check if node lies inside any particle
     std::vector< Eureka::Material * >::const_iterator l_it;
     for( l_it = m_matList.begin(); l_it != m_matList.end(); ++l_it ) {
       //! Temporary material pointer
@@ -350,10 +382,13 @@ void Eureka::Writer::readElems() {
     m_elemMap[m_elemID] = Eureka::Elem( l_n1, l_n2, l_n3, l_n4 );
 
     //! Get nodes
-    Eureka::Node l_node1 = m_nodeMap[l_n1];
-    Eureka::Node l_node2 = m_nodeMap[l_n2];
-    Eureka::Node l_node3 = m_nodeMap[l_n3];
-    Eureka::Node l_node4 = m_nodeMap[l_n4];
+    geo::Vector l_node1 = m_nodeMap[l_n1];
+    geo::Vector l_node2 = m_nodeMap[l_n2];
+    geo::Vector l_node3 = m_nodeMap[l_n3];
+    geo::Vector l_node4 = m_nodeMap[l_n4];
+
+    //! Element quality check
+    checkElemQual( l_node1, l_node2, l_node3, l_node4 );
 
     //! Calculate centroid (P) of tet
     real l_x = (l_node1.m_x + l_node2.m_x + l_node3.m_x + l_node4.m_x) / 4.0;
@@ -466,7 +501,7 @@ void Eureka::Writer::writeNodes() {
   clock_t l_time = clock();
 
   std::cout << "Writing nodes.. " << std::flush;
-  std::map< UID, Eureka::Node >::iterator l_nodeIt;
+  std::map< UID, geo::Vector >::iterator l_nodeIt;
 
   //! Write nodes
   for( l_nodeIt = m_nodeMap.begin(); l_nodeIt != m_nodeMap.end(); ++l_nodeIt )
@@ -677,6 +712,8 @@ void Eureka::Writer::readMshWriteDat() {
 
   //! Read elems
   readElems();
+
+  std::cout << "Number of bad elems = " << m_badElems << "\n\n";
 
   //! Write dat file
   writeDatFile();

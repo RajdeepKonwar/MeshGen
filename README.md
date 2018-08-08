@@ -2,6 +2,7 @@
 Generates Eureka format mesh file using [Gmsh](http://gmsh.info/) as meshing-tool. Gmsh is distributed under the terms of the GNU General Public License (GPL) which means that everyone is free to use Gmsh and to redistribute it on a free basis. `MeshGen` bundles `Gmsh version 3.0.6` which is the latest version as of August 2018. It is recommended to have recent gnu modules loaded (at least gnu/4.8.5) along with OpenGL/Mesa libraries for Gmsh to run properly.
 
 ## Compilation instructions
+NOTE: `MeshGen` requires a C++11 capable compiler to build.
 ```sh
 $ make clean
 $ make
@@ -43,7 +44,7 @@ $ ./gen_mesh.sh -x -c conf/BrakePad.conf -g mesh/BrakePad.geo -m mesh/BrakePad.m
 | conf      | Place all config files (.conf) here                          |
 | EurekaGen | Contains the `EurekaGen` program executable and source files |
 | GeoGen    | Contains the `GeoGen` program executable and source files    |
-| mesh      | Store all mesh-related output files (.dat, .geo, .msh) here |
+| mesh      | Store all mesh-related output files (.dat, .geo, .msh) here  |
 
 Use `mesh/` directory to store all output files, namely the (`-g`, `-m`, `-d`) options from the command-line arguments. The shell script will automatically create the `mesh/` directory if it is missing. If you wish to use your own directory, make sure to create it first and use correct path to avoid dire consequences!
 
@@ -52,7 +53,7 @@ NOTE: All units are in microns (μm). Lines starting with `#` in .conf file are 
 
 The input config file (for example, `./conf/BrakePad.conf`) comprises of the following format:
 ##### Break-pad bounding box dimensions
-Internally, we follow a cartesian coordinate system, where z points upward. Length (by default 10000.0) is measured in x-direction, width (by default 5000.0) in y-direction and height (by default 5500.0) in z-direction.
+Internally, we follow a cartesian coordinate system, where z points upward. Length (by default 10000.0) is measured in x-direction, width (by default 5000.0) in y-direction and height (including piston thickness; by default 5500.0) in z-direction.
 ```
 # Box dimension
 length=10000.0
@@ -105,6 +106,7 @@ The following table describe all aspects of a material block and the possible op
 | --------------- | -------------------------------------------------------------------- |
 | material        | Name of the material, used for element group names                   |
 | vol_frac        | Volume fraction in percentage (wrt the total volume) of the material |
+| count           | Instead of volume fraction, one can specify the exact count of particles for a material. Either one of these values are required |
 | mesh_size       | Individual mesh-size for the material. If left blank, will use the `global_mesh_size` value |
 | morph           | Morphology of the material particles. Available options are `cylinder`/`cyl` and `sphere`/`sph` |
 | rad_distrib     | Probability distribution for radius (base-radius for cylinder whereas actual radius for sphere). Available options are `gaussian`/`gauss` and `uniform`/`flat` |
@@ -120,13 +122,13 @@ One can add as many materials according to their use-case by placing each materi
 ```
 # Material 3
 material=Friction Dust
-vol_frac=16.0
+#vol_frac=0.16
+count=5
 mesh_size=
 morph=sphere
 rad_distrib=gaussian
-rad_min=1500.0
-rad_max=2000.0
-rad_std_dev=100.0
+rad_mean=600.0
+rad_std_dev=50.0
 ```
 
 ## Material file (GeoGen.mat) format

@@ -36,8 +36,18 @@ namespace geo {
   extern Vector unitcross( const Vector &i_vec1,
                            const Vector &i_vec2 );
 
-  extern Matrix getRMat( const Vector &i_a1,
-                         const Vector &i_a2 );
+  extern Matrix getRotMat( const Vector &i_a1,
+                           const Vector &i_a2 );
+
+  extern real getInRadius( const Vector &i_A,
+                           const Vector &i_B,
+                           const Vector &i_C,
+                           const Vector &i_D );
+
+  extern real getCircumRadius( const Vector &i_A,
+                               const Vector &i_B,
+                               const Vector &i_C,
+                               const Vector &i_D );
 }
 
 //! --------------------------------------------------------------------------
@@ -71,7 +81,7 @@ struct geo::Vector {
     this->m_y = i_vec.m_y;
     this->m_z = i_vec.m_z;
 
-    return (*this);
+    return *this;
   }
 
   //! Equality operation
@@ -85,7 +95,7 @@ struct geo::Vector {
     this->m_y += i_vec.m_y;
     this->m_z += i_vec.m_z;
 
-    return (*this);
+    return *this;
   }
 
   //! Division operation (by a real value)
@@ -94,7 +104,7 @@ struct geo::Vector {
     this->m_y /= i_val;
     this->m_z /= i_val;
 
-    return (*this);
+    return *this;
   }
 };
 
@@ -136,7 +146,7 @@ struct geo::Cylinder {
     this->m_radius  = i_cyl.m_radius;
     this->m_length  = i_cyl.m_length;
 
-    return (*this);
+    return *this;
   }
 };
 
@@ -157,7 +167,7 @@ struct geo::Sphere {
     this->m_center = i_sph.m_center;
     this->m_radius = i_sph.m_radius;
 
-    return (*this);
+    return *this;
   }
 };
 

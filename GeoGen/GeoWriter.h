@@ -20,19 +20,26 @@ namespace geo {
   class Writer;
 }
 
+//! ----------------------------------------------------------------------------
+//! Material-block data-structure
+//! ----------------------------------------------------------------------------
 struct geo::Material {
   real        m_meshSize, m_radMean, m_lenMean, m_radStdDev, m_lenStdDev;
-  real        m_radMin, m_radMax, m_lenMin, m_lenMax;
+  real        m_volFrac, m_radMin, m_radMax, m_lenMin, m_lenMax;
+  ID          m_count;
   std::string m_name;
-  real        m_volFrac;
   Morph       m_morph;
   Distrib     m_radDistrib, m_lenDistrib;
 
   Material() : m_meshSize(0.0), m_radMean(0.0), m_lenMean(0.0),
-               m_radStdDev(0.0), m_lenStdDev(0.0),
-               m_radMin(0.0), m_radMax(0.0), m_lenMin(0.0), m_lenMax(0.0) {}
+               m_radStdDev(0.0), m_lenStdDev(0.0), m_volFrac(0.0),
+               m_radMin(0.0), m_radMax(0.0), m_lenMin(0.0), m_lenMax(0.0),
+               m_count(0) {}
 };
 
+//! ----------------------------------------------------------------------------
+//! Writer class
+//! ----------------------------------------------------------------------------
 class geo::Writer {
 private:
   clock_t m_time;

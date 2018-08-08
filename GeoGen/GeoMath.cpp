@@ -4,9 +4,9 @@
 //! Norm (Euclidean) of vector
 //! ----------------------------------------------------------------------------
 real geo::norm( const geo::Vector &i_vec ) {
-  return sqrt( pow( i_vec.m_x, 2.0 ) +
-               pow( i_vec.m_y, 2.0 ) +
-               pow( i_vec.m_z, 2.0 ) );
+  return sqrt( std::pow( i_vec.m_x, 2.0 ) +
+               std::pow( i_vec.m_y, 2.0 ) +
+               std::pow( i_vec.m_z, 2.0 ) );
 }
 
 //! ----------------------------------------------------------------------------
@@ -14,9 +14,9 @@ real geo::norm( const geo::Vector &i_vec ) {
 //! ----------------------------------------------------------------------------
 real geo::dist( const geo::Vector &i_vec1,
                 const geo::Vector &i_vec2 ) {
-  return sqrt( pow( i_vec1.m_x - i_vec2.m_x, 2.0 ) +
-               pow( i_vec1.m_y - i_vec2.m_y, 2.0 ) +
-               pow( i_vec1.m_z - i_vec2.m_z, 2.0 ) );
+  return sqrt( std::pow( i_vec1.m_x - i_vec2.m_x, 2.0 ) +
+               std::pow( i_vec1.m_y - i_vec2.m_y, 2.0 ) +
+               std::pow( i_vec1.m_z - i_vec2.m_z, 2.0 ) );
 }
 
 //! ----------------------------------------------------------------------------
@@ -74,8 +74,8 @@ geo::Vector geo::unitcross( const geo::Vector &i_vec1,
 //! ----------------------------------------------------------------------------
 //! Get rotation matrix
 //! ----------------------------------------------------------------------------
-geo::Matrix geo::getRMat( const geo::Vector &i_a1,
-                          const geo::Vector &i_a2 ) {
+geo::Matrix geo::getRotMat( const geo::Vector &i_a1,
+                            const geo::Vector &i_a2 ) {
   //! cos(theta)
   real l_c = geo::dot( i_a1, i_a2 ) / (geo::norm( i_a1 ) * geo::norm( i_a2 ));
   //! sin(theta)
@@ -99,6 +99,116 @@ geo::Matrix geo::getRMat( const geo::Vector &i_a1,
                                    l_ax.m_z * l_ax.m_z * l_C + l_c ) );
 
   return l_rmat;
+}
+
+//! ----------------------------------------------------------------------------
+//! Get inradius of a tet
+//! ----------------------------------------------------------------------------
+real geo::getInRadius( const geo::Vector &i_A,
+                       const geo::Vector &i_B,
+                       const geo::Vector &i_C,
+                       const geo::Vector &i_D ) {
+  geo::Vector l_b( i_A, i_B );
+  geo::Vector l_c( i_A, i_C );
+  geo::Vector l_d( i_A, i_D );
+
+  geo::Vector l_bc = geo::cross( l_b, l_c );
+  geo::Vector l_cd = geo::cross( l_c, l_d );
+  geo::Vector l_db = geo::cross( l_d, l_b );
+
+  return (geo::dot( l_b, l_cd ) / (geo::norm( l_bc ) +
+                                   geo::norm( l_cd ) +
+                                   geo::norm( l_db ) +
+                                   geo::norm( l_bc + l_cd + l_db )));
+}
+
+//! ----------------------------------------------------------------------------
+//! Get cofactor of a matrix
+//! ----------------------------------------------------------------------------
+void getCofactor( real i_mat[4][4], real i_temp[4][4],
+                  int i_p, int i_q, int i_n ) {
+  int l_i = 0, l_j = 0;
+
+  for( int l_row = 0; l_row < i_n; l_row++ ) {
+    for( int l_col = 0; l_col < i_n; l_col++ ) {
+      if( l_row != i_p && l_col != i_q ) {
+        i_temp[l_i][l_j++] = i_mat[l_row][l_col];
+
+        if( l_j == i_n - 1 ) {
+          l_j = 0;
+          l_i++;
+        }
+      }
+    }
+  }
+}
+
+//! ----------------------------------------------------------------------------
+//! Get determinant of a 4x4 matrix
+//! ----------------------------------------------------------------------------
+real determinant( real i_mat[4][4], int i_n ) {
+  real l_det = 0.0;
+
+  if( i_n == 1 )
+    return i_mat[0][0];
+
+  real l_temp[4][4];
+  int l_sign = 1;
+
+  for( int l_i = 0; l_i < i_n; l_i++ ) {
+    getCofactor( i_mat, l_temp, 0, l_i, i_n );
+    l_det += l_sign * i_mat[0][l_i] * determinant( l_temp, i_n - 1 );
+    l_sign = -l_sign;
+  }
+
+  return l_det;
+}
+
+//! ----------------------------------------------------------------------------
+//! Get circumradius of a tet
+//! ----------------------------------------------------------------------------
+real geo::getCircumRadius( const geo::Vector &i_A,
+                           const geo::Vector &i_B,
+                           const geo::Vector &i_C,
+                           const geo::Vector &i_D ) {
+  real l_x1 = i_A.m_x, l_y1 = i_A.m_y, l_z1 = i_A.m_z,
+       l_x2 = i_B.m_x, l_y2 = i_B.m_y, l_z2 = i_B.m_z,
+       l_x3 = i_C.m_x, l_y3 = i_C.m_y, l_z3 = i_C.m_z,
+       l_x4 = i_D.m_x, l_y4 = i_D.m_y, l_z4 = i_D.m_z;
+
+  real l_m1[4][4] = { { l_x1*l_x1 + l_y1*l_y1 + l_z1*l_z1, l_y1, l_z1, 1.0 },
+                      { l_x2*l_x2 + l_y2*l_y2 + l_z2*l_z2, l_y2, l_z2, 1.0 },
+                      { l_x3*l_x3 + l_y3*l_y3 + l_z3*l_z3, l_y3, l_z3, 1.0 },
+                      { l_x4*l_x4 + l_y4*l_y4 + l_z4*l_z4, l_y4, l_z4, 1.0 } };
+
+  real l_m2[4][4] = { { l_x1*l_x1 + l_y1*l_y1 + l_z1*l_z1, l_x1, l_z1, 1.0 },
+                      { l_x2*l_x2 + l_y2*l_y2 + l_z2*l_z2, l_x2, l_z2, 1.0 },
+                      { l_x3*l_x3 + l_y3*l_y3 + l_z3*l_z3, l_x3, l_z3, 1.0 },
+                      { l_x4*l_x4 + l_y4*l_y4 + l_z4*l_z4, l_x4, l_z4, 1.0 } };
+
+  real l_m3[4][4] = { { l_x1*l_x1 + l_y1*l_y1 + l_z1*l_z1, l_x1, l_y1, 1.0 },
+                      { l_x2*l_x2 + l_y2*l_y2 + l_z2*l_z2, l_x2, l_y2, 1.0 },
+                      { l_x3*l_x3 + l_y3*l_y3 + l_z3*l_z3, l_x3, l_y3, 1.0 },
+                      { l_x4*l_x4 + l_y4*l_y4 + l_z4*l_z4, l_x4, l_y4, 1.0 } };
+
+  real l_m4[4][4] = { { l_x1, l_y1, l_z1, 1.0 },
+                      { l_x2, l_y2, l_z2, 1.0 },
+                      { l_x3, l_y3, l_z3, 1.0 },
+                      { l_x4, l_y4, l_z4, 1.0 } };
+
+  real l_m5[4][4] = { { l_x1*l_x1 + l_y1*l_y1 + l_z1*l_z1, l_x1, l_y1, l_z1 },
+                      { l_x2*l_x2 + l_y2*l_y2 + l_z2*l_z2, l_x2, l_y2, l_z2 },
+                      { l_x3*l_x3 + l_y3*l_y3 + l_z3*l_z3, l_x3, l_y3, l_z3 },
+                      { l_x4*l_x4 + l_y4*l_y4 + l_z4*l_z4, l_x4, l_y4, l_z4 } };
+
+  real l_Dx = determinant( l_m1, 4 );
+  real l_Dy = determinant( l_m2, 4 );
+  real l_Dz = determinant( l_m3, 4 );
+  real l_a  = determinant( l_m4, 4 );
+  real l_c  = determinant( l_m5, 4 );
+
+  return (sqrt( l_Dx * l_Dx + l_Dy * l_Dy + l_Dz * l_Dz - 4.0 * l_a * l_c ) /
+          (2.0 * std::abs( l_a )));
 }
 
 //! ----------------------------------------------------------------------------

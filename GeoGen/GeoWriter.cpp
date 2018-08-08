@@ -269,7 +269,7 @@ void geo::Writer::writeControlPoints( const real                     &i_rad,
 //! ----------------------------------------------------------------------------
 void geo::Writer::writeHeader() {
   if( !m_seed )
-    m_seed = time( nullptr );
+    m_seed = (unsigned) time( nullptr );
 
   //! Seed the randomizer
   srand( m_seed );
@@ -282,6 +282,9 @@ void geo::Writer::writeHeader() {
         << " *  Timestamp: " << std::ctime( &l_t )
         << " *  Rand seed: " << m_seed << "\n"
         << " **/\n\n";
+
+  //! Frontal algorithm
+  m_out << "Mesh.Algorithm = 6;\n\n";
 }
 
 //! ----------------------------------------------------------------------------
@@ -473,7 +476,7 @@ void geo::Writer::writeCylinder( const geo::Material *i_mat ) {
                            randomizer< real >( -1.0, 1.0 ) );
 
     //! Get rotation matrix
-    geo::Matrix l_rmat = geo::getRMat( l_cylAxis, l_rAxis );
+    geo::Matrix l_rmat = geo::getRotMat( l_cylAxis, l_rAxis );
 
     //! Random translations
     geo::Vector l_cB( randomizer< real >( 0.0, m_length ),
@@ -734,14 +737,27 @@ void geo::Writer::writeMaterials() {
     if( !l_mat->m_meshSize )
       l_mat->m_meshSize = m_meshSize;
 
+    if( !l_mat->m_volFrac && !l_mat->m_count ) {
+      std::cerr << "Did not specify volume fraction or count for "
+                << l_mat->m_name << "! Exiting..\n";
+      m_out.close();
+      m_mat.close();
+      exit( EXIT_FAILURE );
+    }
+
     switch( l_mat->m_morph ) {
       case geo::Morph::CYLINDER: {
         real l_r = (l_mat->m_radMean ? l_mat->m_radMean :
                                     ((l_mat->m_radMin + l_mat->m_radMax) / 2.0));
         real l_l = (l_mat->m_lenMean ? l_mat->m_lenMean :
                                     ((l_mat->m_lenMin + l_mat->m_lenMax) / 2.0));
-        ID l_cylCount = (ID) ((l_mat->m_volFrac * l_totVol / 100.0) /
-                              (M_PI * pow( l_r, 2.0 ) * l_l));
+
+        ID l_cylCount = 0;
+        if( l_mat->m_volFrac )
+          l_cylCount = (ID) ((l_mat->m_volFrac * l_totVol / 100.0) /
+                             (M_PI * std::pow( l_r, 2.0 ) * l_l));
+        else
+          l_cylCount = l_mat->m_count;
 
         //! For Gaussian distribution, we need both mean and standard deviation
         if( l_mat->m_radMean && !l_mat->m_radStdDev ) {
@@ -782,8 +798,22 @@ void geo::Writer::writeMaterials() {
       case geo::Morph::SPHERE: {
         real l_r = (l_mat->m_radMean ? l_mat->m_radMean :
                                     ((l_mat->m_radMin + l_mat->m_radMax) / 2.0));
-        ID l_sphCount = (ID) ((l_mat->m_volFrac * l_totVol / 100.0) /
-                              ((4.0 / 3.0) * M_PI * pow( l_r, 3.0 )));
+
+        ID l_sphCount = 0;
+        if( l_mat->m_volFrac )
+          l_sphCount = (ID) ((l_mat->m_volFrac * l_totVol / 100.0) /
+                             ((4.0 / 3.0) * M_PI * std::pow( l_r, 3.0 )));
+        else
+          l_sphCount = l_mat->m_count;
+
+        //! For Gaussian distribution, we need both mean and standard deviation
+        if( l_mat->m_radMean && !l_mat->m_radStdDev ) {
+          std::cerr << "Did not specify standard deviation (radius) for "
+                    << l_mat->m_name << "! Exiting..\n";
+          m_out.close();
+          m_mat.close();
+          exit( EXIT_FAILURE);
+        }
 
         //! Assign rad std dev if not specified by user (needs min and max tho)
         if( !l_mat->m_radStdDev && l_mat->m_radMin && l_mat->m_radMax )
@@ -922,8 +952,15 @@ void geo::Writer::parseConfigFile( const char *i_filename ) {
       l_mat->m_name     = l_varValue;
     }
     else if( l_varName == "vol_frac" ) {
-      chkEmpty( l_varName, l_varValue, l_mat->m_name );
+      //chkEmpty( l_varName, l_varValue, l_mat->m_name );
+      if( l_varValue.empty() )
+        continue;
       l_mat->m_volFrac  = StrToReal( l_varValue );
+    }
+    else if( l_varName == "count" ) {
+      if( l_varValue.empty() )
+        continue;
+      l_mat->m_count    = StrToID( l_varValue );
     }
     else if( l_varName == "mesh_size" ) {
       if( l_varValue.empty() )
