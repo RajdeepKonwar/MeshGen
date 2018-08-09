@@ -9,7 +9,7 @@
 //! ----------------------------------------------------------------------------
 template< typename T >
 inline T randomizer( const T &i_low,
-              const T &i_high ) {
+                     const T &i_high ) {
   return (static_cast< T >(rand()) /
           static_cast< T >(RAND_MAX / (i_high - i_low)) + i_low);
 }
