@@ -135,7 +135,7 @@ bool geo::Writer::collisionDetection( const geo::Sphere &i_sphere ) const {
 //! ----------------------------------------------------------------------------
 //! Checks if any point in list lies out of bounds
 //! ----------------------------------------------------------------------------
-bool geo::Writer::outOfBounds( const std::initializer_list< geo::Vector > &i_list ) const {
+inline bool geo::Writer::outOfBounds( const std::initializer_list< geo::Vector > &i_list ) const {
   std::initializer_list< geo::Vector >::const_iterator l_it;
 
   for( l_it = i_list.begin(); l_it != i_list.end(); ++l_it )
