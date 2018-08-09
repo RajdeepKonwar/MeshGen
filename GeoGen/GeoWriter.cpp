@@ -135,8 +135,7 @@ bool geo::Writer::collisionDetection( const geo::Sphere &i_sphere ) const {
 //! ----------------------------------------------------------------------------
 //! Checks if any point in list lies out of bounds
 //! ----------------------------------------------------------------------------
-bool geo::Writer::outOfBounds( const std::initializer_list< geo::Vector >
-                                                              &i_list ) const {
+bool geo::Writer::outOfBounds( const std::initializer_list< geo::Vector > &i_list ) const {
   std::initializer_list< geo::Vector >::const_iterator l_it;
 
   for( l_it = i_list.begin(); l_it != i_list.end(); ++l_it )
@@ -152,8 +151,8 @@ bool geo::Writer::outOfBounds( const std::initializer_list< geo::Vector >
 //! ----------------------------------------------------------------------------
 //! Write point to geo script
 //! ----------------------------------------------------------------------------
-void geo::Writer::writePoint( const geo::Vector   &i_point,
-                              const real          &i_cl ) {
+inline void geo::Writer::writePoint( const geo::Vector   &i_point,
+                                     const real          &i_cl ) {
   m_out << "Point(" << m_pointID++ << ") = { " << i_point.m_x
         << "," << i_point.m_y << "," << i_point.m_z
         << "," << i_cl << " };\n";
@@ -162,7 +161,7 @@ void geo::Writer::writePoint( const geo::Vector   &i_point,
 //! ----------------------------------------------------------------------------
 //! Write line to geo script
 //! ----------------------------------------------------------------------------
-void geo::Writer::writeLine( const std::pair< real, real > &i_line ) {
+inline void geo::Writer::writeLine( const std::pair< real, real > &i_line ) {
   m_out << "Line(" << m_lineID++ << ") = { " << i_line.first
         << "," << i_line.second << " };\n";
 }
@@ -170,7 +169,7 @@ void geo::Writer::writeLine( const std::pair< real, real > &i_line ) {
 //! ----------------------------------------------------------------------------
 //! Write circle arc to geo script
 //! ----------------------------------------------------------------------------
-void geo::Writer::writeCircle( const std::tuple< real, real, real > &i_circle ) {
+inline void geo::Writer::writeCircle( const std::tuple< real, real, real > &i_circle ) {
   m_out << "Circle(" << m_lineID++ << ") = { "
         << std::get< 0 >(i_circle) << "," << std::get< 1 >(i_circle) << ","
         << std::get< 2 >(i_circle) << " };\n";
@@ -179,7 +178,7 @@ void geo::Writer::writeCircle( const std::tuple< real, real, real > &i_circle ) 
 //! ----------------------------------------------------------------------------
 //! Write line loop to geo script
 //! ----------------------------------------------------------------------------
-void geo::Writer::writeLineLoop( const std::initializer_list< ID > &i_list ) {
+inline void geo::Writer::writeLineLoop( const std::initializer_list< ID > &i_list ) {
   m_out << "Line Loop(" << m_lineLoopID++ << ") = { ";
 
   std::initializer_list< ID >::const_iterator l_it;
@@ -192,22 +191,22 @@ void geo::Writer::writeLineLoop( const std::initializer_list< ID > &i_list ) {
 //! ----------------------------------------------------------------------------
 //! Write plane surface to geo script
 //! ----------------------------------------------------------------------------
-void geo::Writer::writePlaneSurface( const ID &i_loopID ) {
+inline void geo::Writer::writePlaneSurface( const ID &i_loopID ) {
   m_out << "Plane Surface(" << m_surfaceID++ << ") = { " << i_loopID << " };\n";
 }
 
 //! ----------------------------------------------------------------------------
 //! Write surface filling to geo script
 //! ----------------------------------------------------------------------------
-void geo::Writer::writeSurface( const ID &i_loopID ) {
+inline void geo::Writer::writeSurface( const ID &i_loopID ) {
   m_out << "Surface(" << m_surfaceID++ << ") = { " << i_loopID << " };\n";
 }
 
 //! ----------------------------------------------------------------------------
 //! Write surface loop to geo script
 //! ----------------------------------------------------------------------------
-void geo::Writer::writeSurfaceLoop( const ID                &i_loopID,
-                                    const std::vector< ID > &i_list ) {
+inline void geo::Writer::writeSurfaceLoop( const ID                &i_loopID,
+                                           const std::vector< ID > &i_list ) {
   m_out << "Surface Loop(" << i_loopID << ") = { ";
 
   std::vector< ID >::const_iterator l_it;
@@ -252,9 +251,8 @@ void geo::Writer::writeVolumes() {
 //! ----------------------------------------------------------------------------
 //! Write a control points to mat file
 //! ----------------------------------------------------------------------------
-void geo::Writer::writeControlPoints( const real                     &i_rad,
-                                      const std::initializer_list< geo::Vector >
-                                                                     &i_list ) {
+void geo::Writer::writeControlPoints( const real                                 &i_rad,
+                                      const std::initializer_list< geo::Vector > &i_list ) {
     m_mat << i_rad;
 
     std::initializer_list< geo::Vector >::const_iterator l_it;
