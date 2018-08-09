@@ -8,7 +8,7 @@
 //! Randomizer
 //! ----------------------------------------------------------------------------
 template< typename T >
-T randomizer( const T &i_low,
+inline T randomizer( const T &i_low,
               const T &i_high ) {
   return (static_cast< T >(rand()) /
           static_cast< T >(RAND_MAX / (i_high - i_low)) + i_low);
@@ -135,7 +135,7 @@ bool geo::Writer::collisionDetection( const geo::Sphere &i_sphere ) const {
 //! ----------------------------------------------------------------------------
 //! Checks if any point in list lies out of bounds
 //! ----------------------------------------------------------------------------
-inline bool geo::Writer::outOfBounds( const std::initializer_list< geo::Vector > &i_list ) const {
+bool geo::Writer::outOfBounds( const std::initializer_list< geo::Vector > &i_list ) const {
   std::initializer_list< geo::Vector >::const_iterator l_it;
 
   for( l_it = i_list.begin(); l_it != i_list.end(); ++l_it )
