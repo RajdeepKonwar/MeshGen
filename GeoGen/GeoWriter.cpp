@@ -745,6 +745,14 @@ void geo::Writer::writeMaterials() {
       exit( EXIT_FAILURE );
     }
 
+    if( l_mat->m_volFrac && l_mat->m_count ) {
+      std::cerr << "Cannot specify both volume fraction and count for "
+                << l_mat->m_name << "! Exiting..\n";
+      m_out.close();
+      m_mat.close();
+      exit( EXIT_FAILURE );
+    }
+
     switch( l_mat->m_morph ) {
       case geo::Morph::CYLINDER: {
         real l_r = (l_mat->m_radMean ? l_mat->m_radMean :
@@ -754,7 +762,7 @@ void geo::Writer::writeMaterials() {
 
         ID l_cylCount = 0;
         if( l_mat->m_volFrac )
-          l_cylCount = (ID) ((l_mat->m_volFrac * l_totVol / 100.0) /
+          l_cylCount = (ID) ((l_mat->m_volFrac * l_totVol) /
                              (M_PI * std::pow( l_r, 2.0 ) * l_l));
         else
           l_cylCount = l_mat->m_count;
@@ -801,7 +809,7 @@ void geo::Writer::writeMaterials() {
 
         ID l_sphCount = 0;
         if( l_mat->m_volFrac )
-          l_sphCount = (ID) ((l_mat->m_volFrac * l_totVol / 100.0) /
+          l_sphCount = (ID) ((l_mat->m_volFrac * l_totVol) /
                              ((4.0 / 3.0) * M_PI * std::pow( l_r, 3.0 )));
         else
           l_sphCount = l_mat->m_count;

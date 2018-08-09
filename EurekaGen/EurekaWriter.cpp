@@ -250,24 +250,26 @@ void Eureka::Writer::readNodes() {
       m_zRightNodes.push_back( l_id );
 
     //! yleft_nodes
-    if( l_x == 0.0 && (l_z == 0.0 || l_z == m_height) )
+    if( l_x == 0.0 && l_z == 0.0 )
       m_yLeftNodes.push_back( l_id );
 
     //! yright_nodes
-    if( l_x == m_length && (l_z == 0.0 || l_z == m_height) )
+    if( l_x == m_length && l_z == 0.0 )
       m_yRightNodes.push_back( l_id );
 
     //! xfront_nodes
-    if( l_y == 0.0 && (l_z == 0.0 || l_z == m_height) )
+    if( l_y == 0.0 && l_z == 0.0 )
       m_xFrontNodes.push_back( l_id );
 
     //! xback_nodes
-    if( l_y == m_width && (l_z == 0.0 || l_z == m_height) )
+    if( l_y == m_width && l_z == 0.0 )
       m_xBackNodes.push_back( l_id );
 
     //! Piston nodes
-    if( l_z >= (m_height - m_pistonThicc) )
+    if( l_z >= (m_height - m_pistonThicc) ) {
       m_pistonNodes.push_back( l_id );
+      continue;
+    }
 
     geo::Vector l_P( l_x, l_y, l_z );
     bool l_matPt = false;
@@ -324,7 +326,7 @@ void Eureka::Writer::readNodes() {
         break;
     }
 
-    //! If we are at this point, it means node lies inside matrix
+    //! If not belonging to either material or piston means pt lies in matrix
     if( !l_matPt )
       m_matrixNodes.push_back( l_id );
   }
@@ -397,7 +399,7 @@ void Eureka::Writer::readElems() {
     geo::Vector l_P( l_x, l_y, l_z );
 
     //! Check if tet lies inside piston
-    if( l_z > (m_height - m_pistonThicc) ) {
+    if( l_z >= (m_height - m_pistonThicc) ) {
       m_pistonList.push_back( m_elemID++ );
       continue;
     }

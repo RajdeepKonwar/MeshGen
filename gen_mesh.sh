@@ -3,14 +3,13 @@
 # Usage info
 function show_help() {
 cat << EOF
-Usage: ${0##*/} [-h] [-c CONF -g GEO -m MSH -d DAT] [-x]
-Generates Eureka format mesh file (.dat) using Gmsh as meshing-tool.
-    -h      This help message.
-    -c CONF GeoGen input config file.
-    -g GEO  GeoGen output geo file.
-    -m MSH  Gmsh output msh file.
-    -d DAT  EurekGen output mesh file.
-    -x      Do not delete intermediate mat file (optional).
+Usage: ${0##*/} [-h] [-c CONF -m MODEL -o MSHDIR] [-x]
+Generates Eureka-format mesh file using Gmsh as meshing-tool.
+    -h        This help message.
+    -c CONF   Input config file.
+    -m MODEL  Model name (used for mesh filenames).
+    -o MSHDIR Mesh directory.
+    -x        Do not delete intermediate mat file (optional).
 EOF
 }
 
@@ -18,7 +17,7 @@ EOF
 OPTIND=1
 MAT=1
 
-while getopts "hc:g:m:d:x" opt; do
+while getopts "hc:m:o:x" opt; do
   case "$opt" in
     h)
       show_help       # Show help
@@ -27,14 +26,11 @@ while getopts "hc:g:m:d:x" opt; do
     c)
       CONF=$OPTARG    # GeoGen input config file
       ;;
-    g)
-      GEO=$OPTARG     # GeoGen output geo file
-      ;;
     m)
-      MSH=$OPTARG     # Gmsh output msh file
+      MODEL=$OPTARG     # Gmsh output msh file
       ;;
-    d)
-      DAT=$OPTARG     # EurekGen output mesh file
+    o)
+      MSHDIR=$OPTARG     # EurekGen output mesh file
       ;;
     x)
       MAT=0           # Do not delete intermediate mat file (optional)
@@ -48,7 +44,7 @@ done
 shift "$((OPTIND-1))" # Shift off the options and optional --.
 
 # Check command line arguments
-if [[ ( -z "$CONF" || -z "$GEO" || -z "$MSH" || -z "$DAT" ) ]]
+if [[ ( -z "$CONF" || -z "$MODEL" || -z "$MSHDIR" ) ]]
 then
   show_help >&2
   exit 1
@@ -61,28 +57,40 @@ command -v ./gmsh >/dev/null 2>&1 || { echo >&2 "Gmsh binary needs to be in Mesh
 command -v ./GeoGen/GeoGen >/dev/null 2>&1 || { echo >&2 "GeoGen needs to be built first! Type 'make'.."; exit 1; }
 command -v ./EurekaGen/EurekaGen >/dev/null 2>&1 || { echo >&2 "EurekaGen needs to be built first! Type 'make'.."; exit 1; }
 
+# Add trailing slash to mesh directory (if missing)
+length=${#MSHDIR}
+last_char=${MSHDIR:length-1:1}
+[[ $last_char != "/" ]] && MSHDIR="$MSHDIR/";
+
 # Create mesh dir (if missing)
-mkdir -p mesh
+mkdir -p $MSHDIR
+
+printf -v GEO '%s%s.geo' "$MSHDIR" "$MODEL"
+printf -v MSH '%s%s.msh' "$MSHDIR" "$MODEL"
+printf -v DAT '%s%s.dat' "$MSHDIR" "$MODEL"
 
 # Generate geo using GeoGen program
 printf "\n-----------------------------"
 printf "\nGeoGen: Generating geo file.."
 printf "\n-----------------------------\n"
 ./GeoGen/GeoGen -f $CONF -o $GEO
+
+# Exit if GeoGen failed
 if [ $? -ne 0 ]
 then
   exit 1
 fi
 
-SECONDS=0
 # Generate msh using Gmsh program
 printf "\n---------------------------"
 printf "\nGmsh: Generating msh file.."
 printf "\n---------------------------\n"
-#./gmsh $GEO -3 -o $MSH
+SECONDS=0
 ./gmsh $GEO -3 -o $MSH -optimize_threshold 0.6
 duration=$SECONDS
 printf "Time taken = $duration s\n"
+
+# Exit if Gmsh failed
 if [ $? -ne 0 ]
 then
   exit 1
@@ -93,6 +101,8 @@ printf "\n--------------------------------"
 printf "\nEurekaGen: Generating dat file.."
 printf "\n--------------------------------\n"
 ./EurekaGen/EurekaGen -f $CONF -i $MSH -o $DAT
+
+# Exit if EurekaGen failed
 if [ $? -ne 0 ]
 then
   exit 1
