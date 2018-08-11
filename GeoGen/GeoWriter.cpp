@@ -282,7 +282,7 @@ void geo::Writer::writeHeader() {
         << " **/\n\n";
 
   //! Frontal algorithm
-  m_out << "Mesh.Algorithm = 6;\n\n";
+  m_out << "//! Frontal mesh algorithm\nMesh.Algorithm = 6;\n\n";
 }
 
 //! ----------------------------------------------------------------------------
@@ -902,53 +902,38 @@ void geo::Writer::parseConfigFile( const char *i_filename ) {
     std::string l_varName  = l_lineBuf.substr( l_k, l_l - l_k );
     std::string l_varValue = l_lineBuf.substr( l_l + 1 );
 
-    //! Skip entries without values
-    //if( l_varValue.empty() )
-      //continue;
+    //! Skip specific entries without values
+    if( l_varValue.empty() &&
+         (l_varName == "length" || l_varName == "width" || l_varName == "height"
+       || l_varName == "tol_particles_boundaries" || l_varName == "count"
+       || l_varName == "tol_particles" || l_varName == "piston_thicc"
+       || l_varName == "global_mesh_size" || l_varName == "mesh_size"
+       || l_varName == "rand_seed" || l_varName == "vol_frac" ) )
+      continue;
 
     //! Box
-    if( l_varName == "length" ) {
-      chkEmpty( l_varName, l_varValue );
+    if( l_varName == "length" )
       m_length          = StrToReal( l_varValue );
-    }
-    else if( l_varName == "width" ) {
-      chkEmpty( l_varName, l_varValue );
+    else if( l_varName == "width" )
       m_width           = StrToReal( l_varValue );
-    }
-    else if( l_varName == "height" ) {
-      chkEmpty( l_varName, l_varValue );
+    else if( l_varName == "height" )
       m_height          = StrToReal( l_varValue );
-    }
-    else if( l_varName == "global_mesh_size" ) {
-      chkEmpty( l_varName, l_varValue );
+    else if( l_varName == "global_mesh_size" )
       m_meshSize        = StrToReal( l_varValue );
-    }
 
     //! Tolerance values
-    else if( l_varName == "tol_particles" ) {
-      if( l_varValue.empty() )
-        continue;
+    else if( l_varName == "tol_particles" )
       m_tolParticles    = StrToReal( l_varValue );
-    }
-    else if( l_varName == "tol_particles_boundaries" ) {
-      if( l_varValue.empty() )
-        continue;
+    else if( l_varName == "tol_particles_boundaries" )
       m_tolPartBound    = StrToReal( l_varValue );
-    }
 
     //! Random seed
-    else if( l_varName == "rand_seed" ) {
-      if( l_varValue.empty() )
-        continue;
+    else if( l_varName == "rand_seed" )
       m_seed            = StrToID( l_varValue );
-    }
 
     //! Piston thickness
-    else if( l_varName == "piston_thicc" ) {
-      if( l_varValue.empty() )
-        continue;
+    else if( l_varName == "piston_thicc" )
       m_pistonThicc     = StrToID( l_varValue );
-    }
 
     //! Material
     else if( l_varName == "material" ) {
@@ -957,22 +942,12 @@ void geo::Writer::parseConfigFile( const char *i_filename ) {
       m_matList.push_back( l_mat );
       l_mat->m_name     = l_varValue;
     }
-    else if( l_varName == "vol_frac" ) {
-      //chkEmpty( l_varName, l_varValue, l_mat->m_name );
-      if( l_varValue.empty() )
-        continue;
+    else if( l_varName == "vol_frac" )
       l_mat->m_volFrac  = StrToReal( l_varValue );
-    }
-    else if( l_varName == "count" ) {
-      if( l_varValue.empty() )
-        continue;
+    else if( l_varName == "count" )
       l_mat->m_count    = StrToID( l_varValue );
-    }
-    else if( l_varName == "mesh_size" ) {
-      if( l_varValue.empty() )
-        continue;
+    else if( l_varName == "mesh_size" )
       l_mat->m_meshSize = StrToReal( l_varValue );
-    }
     else if( l_varName == "morph" ) {
       chkEmpty( l_varName, l_varValue, l_mat->m_name );
       if( (l_varValue == "cylinder") || (l_varValue == "cyl") )
